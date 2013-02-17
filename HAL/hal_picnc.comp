@@ -1,0 +1,528 @@
+/*    Copyright (C) 2013 GP Orcullo
+ *
+ *    This file is part of PiCnc.
+ *
+ *    Portions of this code is based on stepgen.c
+ *    by John Kasunich, Copyright (C) 2003-2007
+ *
+ *    This program is free software; you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation; either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    This program is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with this program; if not, write to the Free Software
+ *    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+ */
+
+component hal_picnc "Driver for Raspberry Pi PiCnc board";
+
+description """
+Usage: loadrt hal_picnc
+""";
+
+pin in float	#.velocity-cmd[4] = 0.0 "Desired motor velocity";
+pin in float	#.position-cmd[4] = 0.0 "Desired motor position";
+pin in bit	#.enable[4]	  = 0;
+
+pin out float	#.position-fb[4]  = 0.0	"Feedback position ";
+pin out s32	#.counts[4]	  = 0	"Feedback position in counts";
+pin out bit	ready		  = 0	"Module state";
+
+param rw float	#.scale[4]	  = 1.0	"Steps per position unit.";
+param rw float	#.maxvel[4]	  = 1.0	"Maximum velocity";
+param rw float	#.maxaccel[4]	  = 1.0	"Maximum acceleration";
+param rw bit	#.mode[4]	  = 0	"Velocity/Position Mode (true = Position Mode)";
+
+variable long old_dtns		  = 0;	 /* update_freq funct period in nsec */
+variable double dt		  = 0;	 /* update_freq period in seconds */
+variable double recip_dt	  = 0;	 /* reciprocal of period, avoids divides */
+variable double scale_inv[4]	  = 1.0; /* inverse of scale */
+variable double old_vel[4]	  = 0;
+variable double old_pos[4]	  = 0;
+variable int64_t accum[4]	  = 0;	 /* 64 bit DDS accumulator */
+variable s32 accum_diff		  = 0;
+variable s32 old_count[4]	  = 0;
+variable double old_scale[4]	  = 0;
+variable int printed_error[4]	  = 0;	 /* flag to avoid repeated error printing */
+
+option singleton;
+option extra_setup;
+option extra_cleanup;
+
+function read_spi  "Read status";
+function write_spi "Send commands";
+function stepgen   "Step generator";
+
+license "GPL";
+author "GP Orcullo";
+;;
+
+#include "rtapi.h"
+#include "rtapi_bitops.h"
+#include "rtapi_app.h"
+#include "hal.h"
+
+#if !defined(BUILD_SYS_USER_DSO)
+#error "This driver is for usermode threads only"
+#endif
+
+#if !defined(TARGET_PLATFORM_RASPBERRY)
+#error "This driver is for the Raspberry Pi platform only"
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdarg.h>
+
+#include "hal_picnc.h"
+
+#define STEPBIT		17		/* bit location in DDS accum */
+#define STEP_MASK	(1<<STEPBIT)
+#define BASEFREQ	160000		/* Base freq of the PIC stepgen in ns */
+
+#define PERIODFP 	((double)1.0 / (double)(BASEFREQ))
+#define VELSCALE	((double)(1L << STEPBIT) * PERIODFP)
+#define ACCELSCALE	(VELSCALE * PERIODFP)
+
+#define get_position(a)		(rxBuf[2 + (a)])
+#define update_velocity(a, b)	(txBuf[1 + (a)] = (b))
+
+volatile unsigned *gpio, *spi;
+
+static volatile int32_t txBuf[BUFSIZE], rxBuf[BUFSIZE+1];
+
+static int map_gpio();
+static void setup_gpio();
+static void restore_gpio();
+static void reset_board();
+static void transfer_data();
+
+EXTRA_SETUP() {
+	int i, retval = 0;
+
+	retval = map_gpio();
+	if (retval < 0) {
+		rtapi_print_msg(RTAPI_MSG_ERR,
+		        "HAL_PICNC: ERROR: cannot map GPIO memory\n");
+		return retval;
+	}
+
+	setup_gpio();
+	reset_board();
+
+	return 0;
+}
+
+EXTRA_CLEANUP() {
+	if (gpio != MAP_FAILED && spi != MAP_FAILED) {
+		restore_gpio();
+		munmap((void *)gpio,BLOCK_SIZE);
+		munmap((void *)spi,BLOCK_SIZE);
+	}
+}
+
+FUNCTION(read_spi) {
+	int i;
+
+	/* skip loading velocity command */
+	txBuf[0] = 0x444D4300;
+
+	/* send request */
+	BCM2835_GPSET0 = (1l << 24);
+
+	/* wait until ready */
+	while (!(BCM2835_GPLEV0 & (1l << 23)));
+
+	transfer_data();
+
+	/* clear request */
+	BCM2835_GPCLR0 = (1l << 24);
+
+	/* sanity check */
+	if (((uint32_t)rxBuf[1] >> 8) == (rxBuf[BUFSIZE] & 0xffffff))
+		ready = true;
+	else
+		ready = false;
+
+	/* check for change in period */
+	if (period != old_dtns) {
+		old_dtns = period;
+		dt = period * 0.000000001;
+		test2 = dt;
+		recip_dt = 1.0 / dt;
+	}
+
+	/* check for scale change */
+	for (i = 0; i < NUMAXES; i++) {
+		if (_scale(i) != old_scale[i]) {
+			old_scale[i] = _scale(i);
+			/* scale must not be 0 */
+			if ((_scale(i) < 1e-20) && (_scale(i) > -1e-20))
+				_scale(i) = 1.0;
+			scale_inv[i] = (1.0 / (1L << STEPBIT)) / _scale(i);
+		}
+	}
+
+	/* update outputs */
+	for (i = 0; i < NUMAXES; i++) {
+		/* the DDS uses 32 bit counter, this code converts
+		   that counter into 64 bits */
+		accum_diff = get_position(i) - old_count[i];
+		old_count[i] = get_position(i);
+		accum[i] += accum_diff;
+
+		_counts(i) = accum[i] >> STEPBIT;
+		_position_fb(i) = (float)(accum[i]) * scale_inv[i];
+	}
+}
+
+FUNCTION(write_spi) {
+	transfer_data();
+}
+
+FUNCTION(stepgen) {
+
+	int i;
+	double max_vel,
+
+	       desired_vel, max_accl, vel_cmd, dv, new_vel;
+	double dp, pos_cmd, curr_pos, match_accl, match_time, avg_v, est_out, est_cmd, est_err;
+
+	for (i = 0; i < NUMAXES; i++) {
+
+		/* test for disabled stepgen */
+		if (!_enable(i)) {
+			/* set velocity to zero */
+			update_velocity(i, 0);
+			continue;
+		}
+
+		/* calculate velocity limit */
+		max_vel = BASEFREQ/2.0;
+
+		/* check for user specified velocity limit parameter */
+		if (_maxvel(i) <= 0.0) {
+			/* set to zero if negative */
+			_maxvel(i) = 0.0;
+		} else {
+			/* parameter is non-zero, compare to max_vel */
+			desired_vel = _maxvel(i) * fabs(_scale(i));
+			if (desired_vel > max_vel) {
+				/* parameter is too high, complain about it */
+				if (!printed_error[i]) {
+					rtapi_print_msg(RTAPI_MSG_ERR,
+					        "RT-8p8c: Channel %d: "
+					        "The requested maximum "
+					        "velocity of %d steps/sec"
+					        " is too high.\n",
+					        i, (int)desired_vel);
+					rtapi_print_msg(RTAPI_MSG_ERR,
+					        "RT-8p8c: The maximum "
+					        "possible frequency is "
+					        "%d steps/second\n",
+					        (int)max_vel);
+					printed_error[i] = 1;
+				}
+				/* parameter is too high, limit it */
+				_maxvel(i) = max_vel / fabs(_scale(i));
+			} else {
+				/* lower max_vel to match parameter */
+				max_vel = _maxvel(i) * fabs(_scale(i));
+			}
+		}
+
+		/* set internal accel limit to its absolute max, which is
+		   zero to full speed in one thread period */
+		max_accl = max_vel * recip_dt;
+
+		/* check for user specified accel limit parameter */
+		if (_maxaccel(i) <= 0.0) {
+			/* set to zero if negative */
+			_maxaccel(i) = 0.0;
+		} else {
+			/* parameter is non-zero, compare to max_accl */
+			if ((_maxaccel(i) * fabs(_scale(i))) > max_accl) {
+				/* parameter is too high, lower it */
+				_maxaccel(i) = max_accl / fabs(_scale(i));
+			} else {
+				/* lower limit to match parameter */
+				max_accl = _maxaccel(i) * fabs(_scale(i));
+			}
+		}
+
+		if (_mode(i) == 0) {
+			/* calculate velocity command in counts/sec */
+			vel_cmd = _velocity_cmd(i) * _scale(i);
+
+			/* apply frequency limit */
+			if (vel_cmd > max_vel) {
+				vel_cmd = max_vel;
+			} else if (vel_cmd < -max_vel) {
+				vel_cmd = -max_vel;
+			}
+
+			/* calc max change in frequency in one period */
+			dv = max_accl * dt;
+
+			/* apply accel limit */
+			if (vel_cmd > (old_vel[i] + dv)) {
+				new_vel = old_vel[i] + dv;
+			} else if (vel_cmd < (old_vel[i] - dv)) {
+				new_vel = old_vel[i] - dv;
+			} else {
+				new_vel = vel_cmd;
+			}
+		} else {
+			/* calculate position command in counts */
+			pos_cmd = _position_cmd(i) * _scale(i);
+			/* calculate velocity command in counts/sec */
+			vel_cmd = (pos_cmd - old_pos[i]) * recip_dt;
+			old_pos[i] = pos_cmd;
+
+			curr_pos = (double)(accum[i]) * (1.0 / (1L << STEPBIT));
+
+			/* determine which way we need to ramp to match velocity */
+			if (vel_cmd > old_vel[i])
+				match_accl = max_accl;
+			else
+				match_accl = -max_accl;
+
+			/* determine how long the match would take */
+			match_time = (vel_cmd - old_vel[i]) / match_accl;
+			/* calc output position at the end of the match */
+			avg_v = (vel_cmd + old_vel[i]) * 0.5;
+			est_out = curr_pos + avg_v * match_time;
+			/* calculate the expected command position at that time */
+			est_cmd = pos_cmd + vel_cmd * (match_time - 1.5 * dt);
+			/* calculate error at that time */
+			est_err = est_out - est_cmd;
+
+			if (match_time < dt) {
+				/* we can match velocity in one period */
+				if (fabs(est_err) < 0.0001) {
+					/* after match the position error will be acceptable */
+					/* so we just do the velocity match */
+					new_vel = vel_cmd;
+				} else {
+					/* try to correct position error */
+					new_vel = vel_cmd - 0.5 * est_err * recip_dt;
+					/* apply accel limits */
+					if (new_vel > (old_vel[i] + max_accl * dt)) {
+						new_vel = old_vel[i] + max_accl * dt;
+					} else if (new_vel < (old_vel[i] - max_accl * dt)) {
+						new_vel = old_vel[i] - max_accl * dt;
+					}
+				}
+			} else {
+				/* calculate change in final position if we ramp in the
+				opposite direction for one period */
+				dv = -2.0 * match_accl * dt;
+				dp = dv * match_time;
+				/* decide which way to ramp */
+				if (fabs(est_err + dp * 2.0) < fabs(est_err)) {
+					match_accl = -match_accl;
+				}
+				/* and do it */
+				new_vel = old_vel[i] + match_accl * dt;
+			}
+
+			/* apply frequency limit */
+			if (vel_cmd > max_vel) {
+				vel_cmd = max_vel;
+			} else if (vel_cmd < -max_vel) {
+				vel_cmd = -max_vel;
+			}
+		}
+
+		old_vel[i] = new_vel;
+		/* calculate new velocity cmd */
+		update_velocity(i, (new_vel * VELSCALE));
+	}
+
+	/* update velocity command */
+	txBuf[0] = 0x444D433E;
+}
+
+void transfer_data() {
+	char *buf;
+	int i;
+
+	/* activate transfer */
+	BCM2835_SPICS = SPI_CS_TA;
+
+	/* send txBuf */
+	buf = (char *)txBuf;
+	for (i=0; i<SPIBUFSIZE; i++) {
+		BCM2835_SPIFIFO = *buf++;
+	}
+
+	/* wait until transfer is finished */
+	while (!(BCM2835_SPICS & SPI_CS_DONE));
+
+	/* clear DONE bit */
+	BCM2835_SPICS = SPI_CS_DONE;
+
+	/* read buffer */
+	buf = (char *)rxBuf + 3;	/* ignore 1st byte and align data */
+	for (i=0; i<SPIBUFSIZE; i++) {
+		*buf++ = BCM2835_SPIFIFO;
+	}
+}
+
+void reset_board() {
+	uint32_t x,i;
+
+	/* GPIO 25 is configured as a tri-state output pin */
+
+	/* set as output GPIO 25 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (5*3));
+	x |= (0b001 << (5*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* board reset is active low */
+	for (i=0; i<0x10000; i++)
+		BCM2835_GPCLR0 = (1l << 25);
+
+	/* wait until the board is ready */
+	for (i=0; i<0x300000; i++)
+		BCM2835_GPSET0 = (1l << 25);
+
+	/* reset GPIO 25 back to input */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (5*3));
+	BCM2835_GPFSEL2 = x;
+}
+
+int map_gpio() {
+	int fd;
+
+	fd = open("/dev/mem", O_RDWR | O_SYNC);
+	if (fd < 0) {
+		rtapi_print_msg(RTAPI_MSG_ERR,"HAL_PICNC: can't open /dev/mem \n");
+		return -1;
+	}
+
+	/* mmap GPIO */
+	gpio = mmap(
+	        NULL,
+	        BLOCK_SIZE,
+	        PROT_READ|PROT_WRITE,
+	        MAP_SHARED,
+	        fd,
+	        BCM2835_GPIO_BASE);
+
+	/* mmap SPI */
+	spi = mmap(
+	        NULL,
+	        BLOCK_SIZE,
+	        PROT_READ|PROT_WRITE,
+	        MAP_SHARED,
+	        fd,
+	        BCM2835_SPI_BASE);
+
+	close(fd);
+
+	if (gpio == MAP_FAILED) {
+		rtapi_print_msg(RTAPI_MSG_ERR,"HAL_PICNC: can't map gpio\n");
+		return -2;
+	}
+
+	if (spi == MAP_FAILED) {
+		rtapi_print_msg(RTAPI_MSG_ERR,"HAL_PICNC: can't map spi\n");
+		return -3;
+	}
+
+	return 0;
+}
+
+void setup_gpio() {
+	uint32_t x;
+
+	/* GPIO pin usage:
+
+		GPIO 7  - spi
+		GPIO 8  - spi
+		GPIO 9  - spi
+		GPIO 10 - spi
+		GPIO 11 - spi
+		GPIO 23 - input,  request ack from PiCnc
+		GPIO 24 - output, request enable to PiCnc
+		GPIO 25 - in/out, reset PiCnc */
+
+	/* acknowledge GPIO 23 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (3*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* request GPIO 24 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (4*3));
+	x |= (0b001 << (4*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* reset GPIO 25 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (5*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* change SPI pins */
+	x = BCM2835_GPFSEL0;
+	x &= ~(0b111 << (7*3) | 0b111 << (8*3) | 0b111 << (9*3));
+	x |= (0b100 << (7*3) | 0b100 << (8*3) | 0b100 << (9*3));
+	BCM2835_GPFSEL0 = x;
+
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (0*3) | 0b111 << (1*3));
+	x |= (0b100 << (0*3) | 0b100 << (1*3));
+	BCM2835_GPFSEL1 = x;
+
+	/* set up SPI */
+	BCM2835_SPICLK = SPICLKDIV;
+
+	BCM2835_SPICS = 0;
+
+	/* clear FIFOs */
+	BCM2835_SPICS |= SPI_CS_CLEAR_RX | SPI_CS_CLEAR_TX;
+
+	/* clear done bit */
+	BCM2835_SPICS |= SPI_CS_DONE;
+}
+
+void restore_gpio() {
+	uint32_t x;
+
+	/* change all used pins back to inputs*/
+
+	/* request GPIO 24 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (4*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* reset GPIO 25 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (5*3));
+	BCM2835_GPFSEL2 = x;
+
+	/* change SPI pins to inputs*/
+	x = BCM2835_GPFSEL0;
+	x &= ~(0b111 << (7*3) | 0b111 << (8*3) | 0b111 << (9*3));
+	BCM2835_GPFSEL0 = x;
+
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (0*3) | 0b111 << (1*3));
+	BCM2835_GPFSEL1 = x;
+}

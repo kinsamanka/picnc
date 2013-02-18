@@ -1,304 +1,288 @@
-# EESchema Netlist Version 1.1 created  Monday 18,February,2013 08:09:34 AM SGT
+# EESchema Netlist Version 1.1 created  Monday 18,February,2013 12:03:21 PM SGT
 (
- ( /4FF3F6CF SM0402 C1 0.1uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /51218386 $noname  P5 ICSP {Lib=CON_6}
+  (    1 /MCLR )
+  (    2 +3.3V )
+  (    3 GND )
+  (    4 /AN_00 )
+  (    5 /AN_01 )
+  (    6 ? )
  )
- ( /4FF3F6BA SM0402 C2 0.1uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /5121827C $noname  P8 5v_INP {Lib=CON_2}
+  (    1 +5V )
+  (    2 GND )
  )
- ( /4FF3F6BC SM0402 C3 0.1uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /51218259 $noname  P7 5v_RPi {Lib=CON_2}
+  (    1 +5V )
+  (    2 /VCC )
  )
- ( /4FF3F6C6 SM0402 C4 0.1uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /51218155 $noname  P6 RPi_GPIO {Lib=CON_4X2}
+  (    1 /GPIO_0 )
+  (    2 /GPIO_24 )
+  (    3 /GPIO_1 )
+  (    4 /GPIO_21 )
+  (    5 /GPIO_4 )
+  (    6 /GPIO_22 )
+  (    7 /GPIO_17 )
+  (    8 GND )
  )
- ( /4FF3F6D7 SM0402 C5 0.1uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /51218129 $noname  P2 STEP/DIR {Lib=CON_5X2}
+  (    1 +5V )
+  (    2 GND )
+  (    3 /XS )
+  (    4 /XD )
+  (    5 /YS )
+  (    6 /YD )
+  (    7 /ZS )
+  (    8 /ZD )
+  (    9 /AS )
+  (   10 /AD )
  )
- ( /4FF3F87C SM0603 C6 10uf
-  ( 1 VEE )
-  ( 2 GND )
+ ( /512180BA $noname  P3 3.3v_DIGITAL/ANALOG_IO {Lib=CON_10X2}
+  (    1 /AN_00 )
+  (    2 /AN_01 )
+  (    3 /AN_02 )
+  (    4 /AN_03 )
+  (    5 /AN_04 )
+  (    6 /AN_05 )
+  (    7 /AN_06 )
+  (    8 /AN_07 )
+  (    9 /AN_08 )
+  (   10 /AN_09 )
+  (   11 /AN_10 )
+  (   12 /AN_11 )
+  (   13 /AN_12 )
+  (   14 /AN_13 )
+  (   15 /AN_14 )
+  (   16 /AN_15 )
+  (   17 GND )
+  (   18 GND )
+  (   19 GND )
+  (   20 GND )
  )
- ( /50019010 SM0603 C7 2.2uf
-  ( 1 +3.3V )
-  ( 2 GND )
+ ( /51218077 $noname  P4 5v_IO {Lib=CON_8X2}
+  (    1 /IO_00 )
+  (    2 /IO_01 )
+  (    3 /IO_02 )
+  (    4 /IO_03 )
+  (    5 /IO_04 )
+  (    6 /IO_05 )
+  (    7 /IO_06 )
+  (    8 /IO_07 )
+  (    9 /IO_08 )
+  (   10 /IO_09 )
+  (   11 /IO_10 )
+  (   12 /IO_11 )
+  (   13 /IO_12 )
+  (   14 /IO_13 )
+  (   15 /IO_14 )
+  (   16 GND )
  )
- ( /50019032 SM0603 C8 10uf
-  ( 1 +5V )
-  ( 2 GND )
+ ( /511392E7 $noname  P1 RPi_GPIO {Lib=CONN_13X2}
+  (    1 ? )
+  (    2 /VCC )
+  (    3 /GPIO_0 )
+  (    4 /VCC )
+  (    5 /GPIO_1 )
+  (    6 GND )
+  (    7 /GPIO_4 )
+  (    8 /TXD )
+  (    9 GND )
+  (   10 /RXD )
+  (   11 /GPIO_17 )
+  (   12 /RDY )
+  (   13 /GPIO_21 )
+  (   14 GND )
+  (   15 /GPIO_22 )
+  (   16 /REQ )
+  (   17 ? )
+  (   18 /GPIO_24 )
+  (   19 /MOSI )
+  (   20 GND )
+  (   21 /MISO )
+  (   22 /AUX )
+  (   23 /SCLK )
+  (   24 /CE )
+  (   25 GND )
+  (   26 /MCLR )
  )
- ( /500185A0 LED-0603 D1 LED
-  ( 1 /LED1 )
-  ( 2 N-000062 )
+ ( /50076ABB TQFP_64  U1 PIC32MX764F128H {Lib=PIC32MX764F128H}
+  (    1 /ZS )
+  (    2 /AD )
+  (    3 /AS )
+  (    4 /SCLK )
+  (    5 /MOSI )
+  (    6 /MISO )
+  (    7 /MCLR )
+  (    8 /CE )
+  (    9 GND )
+  (   10 +3.3V )
+  (   11 /AN_05 )
+  (   12 /AN_04 )
+  (   13 /AN_03 )
+  (   14 /AN_02 )
+  (   15 /AN_01 )
+  (   16 /AN_00 )
+  (   17 /AN_06 )
+  (   18 /AN_07 )
+  (   19 +3.3V )
+  (   20 GND )
+  (   21 /AN_08 )
+  (   22 /AN_09 )
+  (   23 /AN_10 )
+  (   24 /AN_11 )
+  (   25 GND )
+  (   26 +3.3V )
+  (   27 /AN_12 )
+  (   28 /AN_13 )
+  (   29 /AN_14 )
+  (   30 /AN_15 )
+  (   31 /TXD )
+  (   32 /RXD )
+  (   33 /IO_14 )
+  (   34 ? )
+  (   35 +3.3V )
+  (   36 /RDY )
+  (   37 /REQ )
+  (   38 +3.3V )
+  (   39 /OSC1 )
+  (   40 /OSC2 )
+  (   41 GND )
+  (   42 /IO_08 )
+  (   43 /IO_09 )
+  (   44 /IO_10 )
+  (   45 /IO_11 )
+  (   46 /IO_00 )
+  (   47 /LED1 )
+  (   48 /AUX )
+  (   49 /IO_01 )
+  (   50 /IO_02 )
+  (   51 /IO_03 )
+  (   52 /IO_04 )
+  (   53 /IO_05 )
+  (   54 /IO_06 )
+  (   55 /IO_07 )
+  (   56 VEE )
+  (   57 +3.3V )
+  (   58 /IO_12 )
+  (   59 /IO_13 )
+  (   60 /XD )
+  (   61 /XS )
+  (   62 /YD )
+  (   63 /YS )
+  (   64 /ZD )
  )
- ( /511392E7 pin_array_13x2 P1 RPi_GPIO
-  ( 1 ? )
-  ( 2 /VCC )
-  ( 3 /GPIO_0 )
-  ( 4 /VCC )
-  ( 5 /GPIO_1 )
-  ( 6 GND )
-  ( 7 /GPIO_4 )
-  ( 8 /TXD )
-  ( 9 GND )
-  ( 10 /RXD )
-  ( 11 /GPIO_17 )
-  ( 12 /RDY )
-  ( 13 /GPIO_21 )
-  ( 14 GND )
-  ( 15 /GPIO_22 )
-  ( 16 /REQ )
-  ( 17 ? )
-  ( 18 /GPIO_24 )
-  ( 19 /MOSI )
-  ( 20 GND )
-  ( 21 /MISO )
-  ( 22 /AUX )
-  ( 23 /SCLK )
-  ( 24 /CE )
-  ( 25 GND )
-  ( 26 /MCLR )
+ ( /500395F6 $noname  R10 1K {Lib=R}
+  (    1 +3.3V )
+  (    2 /MCLR )
  )
- ( /51139363 shrouded_pin_header_5x2 P2 STEP/DIR
-  ( 1 +5V )
-  ( 2 GND )
-  ( 3 /XS )
-  ( 4 /XD )
-  ( 5 /YS )
-  ( 6 /YD )
-  ( 7 /ZS )
-  ( 8 /ZD )
-  ( 9 /AS )
-  ( 10 /AD )
+ ( /500395EE $noname  R1 1K {Lib=R}
+  (    1 GND )
+  (    2 N-000051 )
  )
- ( /5119C222 shrouded_pin_header_10x2 P3 3.3v_DIGITAL/ANALOG_IO
-  ( 1 /AN_00 )
-  ( 2 /AN_01 )
-  ( 3 /AN_02 )
-  ( 4 /AN_03 )
-  ( 5 /AN_04 )
-  ( 6 /AN_05 )
-  ( 7 /AN_06 )
-  ( 8 /AN_07 )
-  ( 9 /AN_08 )
-  ( 10 /AN_09 )
-  ( 11 /AN_10 )
-  ( 12 /AN_11 )
-  ( 13 /AN_12 )
-  ( 14 /AN_13 )
-  ( 15 /AN_14 )
-  ( 16 /AN_15 )
-  ( 17 GND )
-  ( 18 GND )
-  ( 19 GND )
-  ( 20 GND )
+ ( /50019032 $noname  C8 10uf {Lib=C}
+  (    1 +5V )
+  (    2 GND )
  )
- ( /511F63B8 shrouded_pin_header_8x2 P4 5v_IO
-  ( 1 /IO_09 )
-  ( 2 /IO_14 )
-  ( 3 /IO_08 )
-  ( 4 /IO_11 )
-  ( 5 /IO_00 )
-  ( 6 /IO_10 )
-  ( 7 /IO_07 )
-  ( 8 /IO_12 )
-  ( 9 /IO_01 )
-  ( 10 /IO_06 )
-  ( 11 /IO_13 )
-  ( 12 /IO_02 )
-  ( 13 /IO_05 )
-  ( 14 /IO_03 )
-  ( 15 /IO_04 )
-  ( 16 GND )
+ ( /50019010 $noname  C7 2.2uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /50057C6F PIN_ARRAY-6X1 P5 ICSP
-  ( 1 /MCLR )
-  ( 2 +3.3V )
-  ( 3 GND )
-  ( 4 /IO_03 )
-  ( 5 /IO_04 )
-  ( 6 ? )
+ ( /50018F97 $noname  U2 LP2985LV {Lib=LP2985LV}
+  (    1 +5V )
+  (    2 GND )
+  (    3 +5V )
+  (    4 ? )
+  (    5 +3.3V )
  )
- ( /51203010 pin_array_4x2 P6 RPi_GPIO
-  ( 1 /GPIO_0 )
-  ( 2 /GPIO_24 )
-  ( 3 /GPIO_1 )
-  ( 4 /GPIO_21 )
-  ( 5 /GPIO_4 )
-  ( 6 /GPIO_22 )
-  ( 7 /GPIO_17 )
-  ( 8 GND )
+ ( /500185A0 $noname  D1 LED {Lib=LED}
+  (    1 /LED1 )
+  (    2 N-000051 )
  )
- ( /51203037 PIN_ARRAY_2X1 P7 5v_RPi
-  ( 1 +5V )
-  ( 2 /VCC )
+ ( /5000B524 resonators-CSTCC  X1 8Mhz {Lib=CSTCC}
+  (    1 /OSC1 )
+  (    2 GND )
+  (    3 /OSC2 )
  )
- ( /512070B5 PSH02-2PG P8 5v_INP
-  ( 1 +5V )
-  ( 2 GND )
+ ( /4FF3FA4E $noname  R9 1K {Lib=R}
+  (    1 /XD )
+  (    2 +5V )
  )
- ( /500395EE SM0402 R1 1K
-  ( 1 GND )
-  ( 2 N-000062 )
+ ( /4FF3FA4A $noname  R8 1K {Lib=R}
+  (    1 /XS )
+  (    2 +5V )
  )
- ( /4FF3F948 SM0402 R2 1K
-  ( 1 /AS )
-  ( 2 +5V )
+ ( /4FF3FA45 $noname  R7 1K {Lib=R}
+  (    1 /YD )
+  (    2 +5V )
  )
- ( /4FF3F93E SM0402 R3 1K
-  ( 1 /AD )
-  ( 2 +5V )
+ ( /4FF3FA36 $noname  R6 1K {Lib=R}
+  (    1 /YS )
+  (    2 +5V )
  )
- ( /4FF3F8FD SM0402 R4 1K
-  ( 1 /ZS )
-  ( 2 +5V )
+ ( /4FF3F948 $noname  R2 1K {Lib=R}
+  (    1 /AS )
+  (    2 +5V )
  )
- ( /4FF3F8EC SM0402 R5 1K
-  ( 1 /ZD )
-  ( 2 +5V )
+ ( /4FF3F93E $noname  R3 1K {Lib=R}
+  (    1 /AD )
+  (    2 +5V )
  )
- ( /4FF3FA36 SM0402 R6 1K
-  ( 1 /YS )
-  ( 2 +5V )
+ ( /4FF3F8FD $noname  R4 1K {Lib=R}
+  (    1 /ZS )
+  (    2 +5V )
  )
- ( /4FF3FA45 SM0402 R7 1K
-  ( 1 /YD )
-  ( 2 +5V )
+ ( /4FF3F8EC $noname  R5 1K {Lib=R}
+  (    1 /ZD )
+  (    2 +5V )
  )
- ( /4FF3FA4A SM0402 R8 1K
-  ( 1 /XS )
-  ( 2 +5V )
+ ( /4FF3F87C $noname  C6 10uf {Lib=C}
+  (    1 VEE )
+  (    2 GND )
  )
- ( /4FF3FA4E SM0402 R9 1K
-  ( 1 /XD )
-  ( 2 +5V )
+ ( /4FF3F6D7 $noname  C5 0.1uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /500395F6 SM0402 R10 1K
-  ( 1 +3.3V )
-  ( 2 /MCLR )
+ ( /4FF3F6CF $noname  C1 0.1uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /50076ABB TQFP_64 U1 PIC32MX764F128H
-  ( 1 /ZS )
-  ( 2 /AD )
-  ( 3 /AS )
-  ( 4 /SCLK )
-  ( 5 /MOSI )
-  ( 6 /MISO )
-  ( 7 /MCLR )
-  ( 8 /CE )
-  ( 9 GND )
-  ( 10 +3.3V )
-  ( 11 /AN_05 )
-  ( 12 /AN_04 )
-  ( 13 /AN_03 )
-  ( 14 /AN_02 )
-  ( 15 /AN_01 )
-  ( 16 /AN_00 )
-  ( 17 /AN_06 )
-  ( 18 /AN_07 )
-  ( 19 +3.3V )
-  ( 20 GND )
-  ( 21 /AN_08 )
-  ( 22 /AN_09 )
-  ( 23 /AN_10 )
-  ( 24 /AN_11 )
-  ( 25 GND )
-  ( 26 +3.3V )
-  ( 27 /AN_12 )
-  ( 28 /AN_13 )
-  ( 29 /AN_14 )
-  ( 30 /AN_15 )
-  ( 31 /TXD )
-  ( 32 /RXD )
-  ( 33 /IO_14 )
-  ( 34 ? )
-  ( 35 +3.3V )
-  ( 36 /RDY )
-  ( 37 /REQ )
-  ( 38 +3.3V )
-  ( 39 /OSC1 )
-  ( 40 /OSC2 )
-  ( 41 GND )
-  ( 42 /IO_08 )
-  ( 43 /IO_09 )
-  ( 44 /IO_10 )
-  ( 45 /IO_11 )
-  ( 46 /IO_00 )
-  ( 47 /LED1 )
-  ( 48 /AUX )
-  ( 49 /IO_01 )
-  ( 50 /IO_02 )
-  ( 51 /IO_03 )
-  ( 52 /IO_04 )
-  ( 53 /IO_05 )
-  ( 54 /IO_06 )
-  ( 55 /IO_07 )
-  ( 56 VEE )
-  ( 57 +3.3V )
-  ( 58 /IO_12 )
-  ( 59 /IO_13 )
-  ( 60 /XD )
-  ( 61 /XS )
-  ( 62 /YD )
-  ( 63 /YS )
-  ( 64 /ZD )
+ ( /4FF3F6C6 $noname  C4 0.1uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /50018F97 SOT23-5 U2 LP2985LV
-  ( 1 +5V )
-  ( 2 GND )
-  ( 3 +5V )
-  ( 4 ? )
-  ( 5 +3.3V )
+ ( /4FF3F6BC $noname  C3 0.1uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
- ( /5000B524 resonator-CSTCC X1 8Mhz
-  ( 1 /OSC1 )
-  ( 2 GND )
-  ( 3 /OSC2 )
+ ( /4FF3F6BA $noname  C2 0.1uf {Lib=C}
+  (    1 +3.3V )
+  (    2 GND )
  )
 )
 *
 { Allowed footprints by component:
-$component C1
- SM*
- C?
- C1-1
+$component R10
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
 $endlist
-$component C2
- SM*
- C?
- C1-1
+$component R1
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
 $endlist
-$component C3
- SM*
- C?
- C1-1
-$endlist
-$component C4
- SM*
- C?
- C1-1
-$endlist
-$component C5
- SM*
- C?
- C1-1
-$endlist
-$component C6
+$component C8
  SM*
  C?
  C1-1
 $endlist
 $component C7
- SM*
- C?
- C1-1
-$endlist
-$component C8
  SM*
  C?
  C1-1
@@ -312,7 +296,28 @@ $component D1
  LED-1206
  LEDV
 $endlist
-$component R1
+$component R9
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R8
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R7
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R6
  R?
  SM0603
  SM0805
@@ -347,40 +352,298 @@ $component R5
  R?-*
  SM1206
 $endlist
-$component R6
- R?
- SM0603
- SM0805
- R?-*
- SM1206
+$component C6
+ SM*
+ C?
+ C1-1
 $endlist
-$component R7
- R?
- SM0603
- SM0805
- R?-*
- SM1206
+$component C5
+ SM*
+ C?
+ C1-1
 $endlist
-$component R8
- R?
- SM0603
- SM0805
- R?-*
- SM1206
+$component C1
+ SM*
+ C?
+ C1-1
 $endlist
-$component R9
- R?
- SM0603
- SM0805
- R?-*
- SM1206
+$component C4
+ SM*
+ C?
+ C1-1
 $endlist
-$component R10
- R?
- SM0603
- SM0805
- R?-*
- SM1206
+$component C3
+ SM*
+ C?
+ C1-1
+$endlist
+$component C2
+ SM*
+ C?
+ C1-1
 $endlist
 $endfootprintlist
 }
+{ Pin List by Nets
+Net 1 "/RXD" "RXD"
+ P1 10
+ U1 32
+Net 2 "/TXD" "TXD"
+ U1 31
+ P1 8
+Net 3 "/IO_03" "IO_03"
+ P4 4
+ U1 51
+Net 4 "/IO_08" "IO_08"
+ U1 42
+ P4 9
+Net 5 "/IO_04" "IO_04"
+ U1 52
+ P4 5
+Net 6 "/IO_14" "IO_14"
+ U1 33
+ P4 15
+Net 7 "/IO_09" "IO_09"
+ U1 43
+ P4 10
+Net 8 "/IO_05" "IO_05"
+ U1 53
+ P4 6
+Net 9 "/IO_02" "IO_02"
+ P4 3
+ U1 50
+Net 10 "/OSC2" "OSC2"
+ X1 3
+ U1 40
+Net 11 "/MCLR" "MCLR"
+ P5 1
+ P1 26
+ R10 2
+ U1 7
+Net 12 "/MOSI" "MOSI"
+ U1 5
+ P1 19
+Net 13 "/IO_00" "IO_00"
+ P4 1
+ U1 46
+Net 14 "/IO_01" "IO_01"
+ U1 49
+ P4 2
+Net 15 "/OSC1" "OSC1"
+ U1 39
+ X1 1
+Net 16 "/IO_12" "IO_12"
+ U1 58
+ P4 13
+Net 17 "/AUX" "AUX"
+ P1 22
+ U1 48
+Net 18 "/LED1" "LED1"
+ U1 47
+ D1 1
+Net 19 "/GPIO_24" "GPIO_24"
+ P1 18
+ P6 2
+Net 20 "/IO_07" "IO_07"
+ P4 8
+ U1 55
+Net 21 "/IO_11" "IO_11"
+ U1 45
+ P4 12
+Net 22 "/IO_06" "IO_06"
+ U1 54
+ P4 7
+Net 23 "/IO_10" "IO_10"
+ U1 44
+ P4 11
+Net 26 "/REQ" "REQ"
+ P1 16
+ U1 37
+Net 27 "/GPIO_22" "GPIO_22"
+ P6 6
+ P1 15
+Net 28 "/CE" "CE"
+ P1 24
+ U1 8
+Net 29 "/SCLK" "SCLK"
+ U1 4
+ P1 23
+Net 30 "/GPIO_21" "GPIO_21"
+ P6 4
+ P1 13
+Net 31 "/RDY" "RDY"
+ U1 36
+ P1 12
+Net 32 "/MISO" "MISO"
+ U1 6
+ P1 21
+Net 33 "/GPIO_17" "GPIO_17"
+ P1 11
+ P6 7
+Net 34 "/IO_13" "IO_13"
+ P4 14
+ U1 59
+Net 35 "/GPIO_4" "GPIO_4"
+ P1 7
+ P6 5
+Net 36 "/GPIO_1" "GPIO_1"
+ P1 5
+ P6 3
+Net 37 "/GPIO_0" "GPIO_0"
+ P6 1
+ P1 3
+Net 39 "+5V" "+5V"
+ P8 1
+ P7 1
+ P2 1
+ C8 1
+ U2 1
+ U2 3
+ R8 2
+ R9 2
+ R4 2
+ R7 2
+ R6 2
+ R2 2
+ R5 2
+ R3 2
+Net 40 "VEE" "VEE"
+ U1 56
+ C6 1
+Net 42 "/AD" "AD"
+ R3 1
+ U1 2
+ P2 10
+Net 43 "/XD" "XD"
+ R9 1
+ U1 60
+ P2 4
+Net 44 "/YD" "YD"
+ R7 1
+ P2 6
+ U1 62
+Net 45 "/ZD" "ZD"
+ P2 8
+ R5 1
+ U1 64
+Net 46 "/AS" "AS"
+ R2 1
+ P2 9
+ U1 3
+Net 47 "/XS" "XS"
+ U1 61
+ P2 3
+ R8 1
+Net 48 "/YS" "YS"
+ R6 1
+ P2 5
+ U1 63
+Net 49 "/ZS" "ZS"
+ P2 7
+ R4 1
+ U1 1
+Net 51 "" ""
+ R1 2
+ D1 2
+Net 52 "/AN_03" "AN_03"
+ U1 13
+ P3 4
+Net 53 "/AN_02" "AN_02"
+ P3 3
+ U1 14
+Net 54 "/AN_01" "AN_01"
+ U1 15
+ P3 2
+ P5 5
+Net 55 "/AN_00" "AN_00"
+ U1 16
+ P3 1
+ P5 4
+Net 56 "/AN_04" "AN_04"
+ U1 12
+ P3 5
+Net 57 "/VCC" "VCC"
+ P7 2
+ P1 4
+ P1 2
+Net 59 "GND" "GND"
+ U1 25
+ C5 2
+ P3 19
+ P3 18
+ P3 17
+ P3 20
+ C2 2
+ C3 2
+ U1 9
+ U1 20
+ C1 2
+ C4 2
+ U1 41
+ R1 1
+ X1 2
+ P2 2
+ U2 2
+ P6 8
+ C6 2
+ C8 2
+ C7 2
+ P4 16
+ P1 9
+ P1 6
+ P1 25
+ P1 14
+ P5 3
+ P1 20
+ P8 2
+Net 60 "/AN_15" "AN_15"
+ U1 30
+ P3 16
+Net 61 "/AN_14" "AN_14"
+ U1 29
+ P3 15
+Net 62 "/AN_13" "AN_13"
+ U1 28
+ P3 14
+Net 63 "/AN_12" "AN_12"
+ P3 13
+ U1 27
+Net 64 "/AN_11" "AN_11"
+ P3 12
+ U1 24
+Net 65 "/AN_10" "AN_10"
+ P3 11
+ U1 23
+Net 66 "/AN_09" "AN_09"
+ U1 22
+ P3 10
+Net 67 "/AN_08" "AN_08"
+ U1 21
+ P3 9
+Net 68 "/AN_07" "AN_07"
+ P3 8
+ U1 18
+Net 69 "/AN_06" "AN_06"
+ P3 7
+ U1 17
+Net 70 "/AN_05" "AN_05"
+ U1 11
+ P3 6
+Net 71 "+3.3V" "+3.3V"
+ C5 1
+ C1 1
+ U1 57
+ U1 19
+ U1 38
+ C7 1
+ R10 1
+ U2 5
+ U1 26
+ U1 35
+ P5 2
+ C4 1
+ U1 10
+ C3 1
+ C2 1
+}
+#End

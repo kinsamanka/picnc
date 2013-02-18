@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Monday 18,February,2013 08:21:33 AM SGT
+EESchema Schematic File Version 2  date Monday 18,February,2013 12:46:50 PM SGT
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -44,12 +44,75 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
+$Comp
+L CON_6 P5
+U 1 1 51218386
+P 9800 3850
+F 0 "P5" H 9800 4200 60  0000 C CNN
+F 1 "ICSP" V 9800 3850 50  0000 C CNN
+	1    9800 3850
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_2 P8
+U 1 1 5121827C
+P 9750 5600
+F 0 "P8" H 9750 5800 60  0000 C CNN
+F 1 "5v INP" V 9750 5600 50  0000 C CNN
+	1    9750 5600
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_2 P7
+U 1 1 51218259
+P 9750 5100
+F 0 "P7" H 9750 5300 60  0000 C CNN
+F 1 "5v RPi" V 9750 5100 50  0000 C CNN
+	1    9750 5100
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_4X2 P6
+U 1 1 51218155
+P 9750 4550
+F 0 "P6" H 9750 4800 60  0000 C CNN
+F 1 "RPi GPIO" V 9750 4550 50  0000 C CNN
+	1    9750 4550
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_5X2 P2
+U 1 1 51218129
+P 7300 2950
+F 0 "P2" H 7300 3250 60  0000 C CNN
+F 1 "STEP/DIR" V 7300 2950 50  0000 C CNN
+	1    7300 2950
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_10X2 P3
+U 1 1 512180BA
+P 7300 3900
+F 0 "P3" H 7300 4450 60  0000 C CNN
+F 1 "3.3v DIGITAL/ANALOG IO" V 7300 3900 50  0000 C CNN
+	1    7300 3900
+	1    0    0    -1  
+$EndComp
+$Comp
+L CON_8X2 P4
+U 1 1 51218077
+P 7300 5000
+F 0 "P4" H 7300 5450 60  0000 C CNN
+F 1 "5v IO" V 7300 5000 50  0000 C CNN
+	1    7300 5000
+	1    0    0    -1  
+$EndComp
 Wire Wire Line
-	9100 5850 9100 5700
+	9050 5850 9050 5700
 Wire Wire Line
-	9400 5500 9100 5500
+	9350 5500 9050 5500
 Wire Wire Line
-	9100 5500 9100 5400
+	9050 5500 9050 5400
 Wire Wire Line
 	10300 4850 10300 4700
 Wire Wire Line
@@ -254,38 +317,29 @@ Connection ~ 7350 6750
 Wire Wire Line
 	7350 6750 6350 6750
 Wire Wire Line
-	9100 4900 9100 5000
+	9050 4900 9050 5000
 Wire Wire Line
-	9100 5000 9400 5000
+	9050 5000 9350 5000
 Wire Wire Line
 	7800 1350 7800 1250
 Wire Wire Line
-	9100 5700 9400 5700
+	9050 5700 9350 5700
 $Comp
 L GND #PWR01
 U 1 1 512070BF
-P 9100 5850
-F 0 "#PWR01" H 9100 5850 30  0001 C CNN
-F 1 "GND" H 9100 5780 30  0001 C CNN
-	1    9100 5850
-	1    0    0    -1  
-$EndComp
-$Comp
-L CONN_2 P8
-U 1 1 512070B5
-P 9750 5600
-F 0 "P8" H 9750 5800 40  0000 C CNN
-F 1 "5v INP" V 9750 5600 40  0000 C CNN
-	1    9750 5600
+P 9050 5850
+F 0 "#PWR01" H 9050 5850 30  0001 C CNN
+F 1 "GND" H 9050 5780 30  0001 C CNN
+	1    9050 5850
 	1    0    0    -1  
 $EndComp
 $Comp
 L +5V #PWR02
 U 1 1 512070B4
-P 9100 5400
-F 0 "#PWR02" H 9100 5490 20  0001 C CNN
-F 1 "+5V" H 9100 5490 30  0000 C CNN
-	1    9100 5400
+P 9050 5400
+F 0 "#PWR02" H 9050 5490 20  0001 C CNN
+F 1 "+5V" H 9050 5490 30  0000 C CNN
+	1    9050 5400
 	1    0    0    -1  
 $EndComp
 Text Label 10150 4600 0    60   ~ 0
@@ -304,7 +358,7 @@ Text Label 10150 4400 0    60   ~ 0
 GPIO_24
 Text Label 7900 1250 0    60   ~ 0
 VCC
-Text Label 9400 5200 2    60   ~ 0
+Text Label 9350 5200 2    60   ~ 0
 VCC
 $Comp
 L GND #PWR03
@@ -318,28 +372,10 @@ $EndComp
 $Comp
 L +5V #PWR04
 U 1 1 512030D0
-P 9100 4900
-F 0 "#PWR04" H 9100 4990 20  0001 C CNN
-F 1 "+5V" H 9100 4990 30  0000 C CNN
-	1    9100 4900
-	1    0    0    -1  
-$EndComp
-$Comp
-L CONN_2 P7
-U 1 1 51203037
-P 9750 5100
-F 0 "P7" H 9750 5300 40  0000 C CNN
-F 1 "5v RPi" V 9750 5100 40  0000 C CNN
-	1    9750 5100
-	1    0    0    -1  
-$EndComp
-$Comp
-L CONN_4X2 P6
-U 1 1 51203010
-P 9750 4550
-F 0 "P6" H 9750 4800 50  0000 C CNN
-F 1 "RPi GPIO" V 9750 4550 40  0000 C CNN
-	1    9750 4550
+P 9050 4900
+F 0 "#PWR04" H 9050 4990 20  0001 C CNN
+F 1 "+5V" H 9050 4990 30  0000 C CNN
+	1    9050 4900
 	1    0    0    -1  
 $EndComp
 Text Label 7700 2250 0    60   ~ 0
@@ -366,15 +402,6 @@ Text Label 5150 2550 0    60   ~ 0
 AD
 Text Label 5150 2650 0    60   ~ 0
 AS
-$Comp
-L CONN_8X2 P4
-U 1 1 511F63B8
-P 7300 5000
-F 0 "P4" H 7300 5450 60  0000 C CNN
-F 1 "5v IO" V 7300 5000 50  0000 C CNN
-	1    7300 5000
-	1    0    0    -1  
-$EndComp
 Text Label 6900 1950 2    60   ~ 0
 GPIO_22
 Text Label 6900 1850 2    60   ~ 0
@@ -532,15 +559,6 @@ Text Label 5150 4650 0    60   ~ 0
 MISO
 Text Label 5150 4550 0    60   ~ 0
 MOSI
-$Comp
-L CONN_10X2 P3
-U 1 1 5119C222
-P 7300 3900
-F 0 "P3" H 7300 4450 60  0000 C CNN
-F 1 "3.3v DIGITAL/ANALOG IO" V 7300 3900 50  0000 C CNN
-	1    7300 3900
-	1    0    0    -1  
-$EndComp
 Text Label 7700 1950 0    60   ~ 0
 REQ
 Text Label 7700 1750 0    60   ~ 0
@@ -568,15 +586,6 @@ TXD
 Text Label 7700 1450 0    60   ~ 0
 GND
 $Comp
-L CONN_5X2 P2
-U 1 1 51139363
-P 7300 2950
-F 0 "P2" H 7300 3250 60  0000 C CNN
-F 1 "STEP/DIR" V 7300 2950 50  0000 C CNN
-	1    7300 2950
-	1    0    0    -1  
-$EndComp
-$Comp
 L CONN_13X2 P1
 U 1 1 511392E7
 P 7300 1850
@@ -597,15 +606,6 @@ F 2 "TQFP_64" H 3650 3400 50  0001 C CNN
 $EndComp
 NoConn ~ 5150 3450
 NoConn ~ 9400 4105
-$Comp
-L CONN_6 P5
-U 1 1 50057C6F
-P 9750 3850
-F 0 "P5" H 9745 4195 60  0000 C CNN
-F 1 "ICSP" V 9750 3850 60  0000 C CNN
-	1    9750 3850
-	1    0    0    -1  
-$EndComp
 Text Label 10050 2200 0    60   ~ 0
 ZS
 Text Label 10050 2600 0    60   ~ 0
@@ -650,35 +650,35 @@ F 1 "1K" V 9700 1300 50  0000 C CNN
 	0    1    1    0   
 $EndComp
 NoConn ~ 3900 6500
-Text Label 6900 5150 2    60   ~ 0
-IO_13
-Text Label 7700 4750 0    60   ~ 0
-IO_11
-Text Label 7700 5050 0    60   ~ 0
-IO_06
-Text Label 6900 4950 2    60   ~ 0
-IO_07
-Text Label 6900 5250 2    60   ~ 0
-IO_05
 Text Label 7700 5250 0    60   ~ 0
-IO_03
-Text Label 6900 5050 2    60   ~ 0
-IO_01
-Text Label 7700 4650 0    60   ~ 0
-IO_14
-Text Label 7700 4950 0    60   ~ 0
-IO_12
-Text Label 7700 4850 0    60   ~ 0
-IO_10
-Text Label 6900 4750 2    60   ~ 0
-IO_08
-Text Label 6900 4650 2    60   ~ 0
-IO_09
-Text Label 6900 5350 2    60   ~ 0
-IO_04
+IO_13
 Text Label 7700 5150 0    60   ~ 0
-IO_02
+IO_11
+Text Label 6900 4950 2    60   ~ 0
+IO_06
+Text Label 7700 4950 0    60   ~ 0
+IO_07
+Text Label 7700 4850 0    60   ~ 0
+IO_05
+Text Label 7700 4750 0    60   ~ 0
+IO_03
+Text Label 7700 4650 0    60   ~ 0
+IO_01
+Text Label 6900 5350 2    60   ~ 0
+IO_14
+Text Label 6900 5250 2    60   ~ 0
+IO_12
+Text Label 6900 5150 2    60   ~ 0
+IO_10
+Text Label 6900 5050 2    60   ~ 0
+IO_08
+Text Label 7700 5050 0    60   ~ 0
+IO_09
 Text Label 6900 4850 2    60   ~ 0
+IO_04
+Text Label 6900 4750 2    60   ~ 0
+IO_02
+Text Label 6900 4650 2    60   ~ 0
 IO_00
 $Comp
 L +5V #PWR011
@@ -746,9 +746,9 @@ F 1 "GND" H 9100 4005 30  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Text Label 9400 4000 2    60   ~ 0
-IO_04
+AN_01
 Text Label 9400 3900 2    60   ~ 0
-IO_03
+AN_00
 $Comp
 L +3.3V #PWR015
 U 1 1 5001876E

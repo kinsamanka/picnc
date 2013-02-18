@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Monday 18,February,2013 08:09:34 AM SGT
+Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Monday 18,February,2013 09:33:32 AM SGT
 
 BeginCmp
 TimeStamp = /4FF3F6CF;
@@ -71,49 +71,49 @@ IdModule  = pin_array_13x2;
 EndCmp
 
 BeginCmp
-TimeStamp = /51139363;
+TimeStamp = /51218129;
 Reference = P2;
 ValeurCmp = STEP/DIR;
 IdModule  = shrouded_pin_header_5x2;
 EndCmp
 
 BeginCmp
-TimeStamp = /5119C222;
+TimeStamp = /512180BA;
 Reference = P3;
 ValeurCmp = 3.3v_DIGITAL/ANALOG_IO;
 IdModule  = shrouded_pin_header_10x2;
 EndCmp
 
 BeginCmp
-TimeStamp = /511F63B8;
+TimeStamp = /51218077;
 Reference = P4;
 ValeurCmp = 5v_IO;
 IdModule  = shrouded_pin_header_8x2;
 EndCmp
 
 BeginCmp
-TimeStamp = /50057C6F;
+TimeStamp = /51218386;
 Reference = P5;
 ValeurCmp = ICSP;
 IdModule  = PIN_ARRAY-6X1;
 EndCmp
 
 BeginCmp
-TimeStamp = /51203010;
+TimeStamp = /51218155;
 Reference = P6;
 ValeurCmp = RPi_GPIO;
 IdModule  = pin_array_4x2;
 EndCmp
 
 BeginCmp
-TimeStamp = /51203037;
+TimeStamp = /51218259;
 Reference = P7;
 ValeurCmp = 5v_RPi;
 IdModule  = PIN_ARRAY_2X1;
 EndCmp
 
 BeginCmp
-TimeStamp = /512070B5;
+TimeStamp = /5121827C;
 Reference = P8;
 ValeurCmp = 5v_INP;
 IdModule  = PSH02-2PG;

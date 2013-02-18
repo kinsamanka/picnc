@@ -562,7 +562,7 @@ void restore_gpio() {
 #endif
 	/* change SPI pins to inputs*/
 	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << 0b111 << (8*3) | 0b111 << (9*3));
+	x &= ~(0b111 << (8*3) | 0b111 << (9*3));
 	BCM2835_GPFSEL0 = x;
 
 	x = BCM2835_GPFSEL1;

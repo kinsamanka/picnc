@@ -1,0 +1,36 @@
+Compiling and testing the RPi SPI test HAL driver:
+
+1) If you are using the image provided in http://wiki.linuxcnc.org/cgi-bin/wiki.pl?RaspbianXenomaiBuild 
+   issue the following commands first:
+
+	sudo ln -s /usr/local/include/linuxcnc/ /usr/local/include/userpci
+	
+   Othewise the build will fail. I think this is a bug is LinuxCNC.
+
+2) Compile by issuing the command: 
+
+	sudo comp --install hal_rpspi.comp
+
+3) Unload the SPI linux driver (if loaded)
+
+	sudo rmmod spi_bcm2708
+
+4) Testing, run halrun and issue the following commands:
+
+	loadrt threads name1=test period1=1000000
+	loadrt hal_rpspi
+	addf rpspi.transfer test
+	start
+	
+	# load rspi.00.tx
+	setp rpspi.00.tx 0x12345678
+
+	# monitor rspi.00.rx
+	show pin rpspi.00.rx
+	
+	# short out pins P1-19 & P1-21, SPI0_MOSI SPI0_MISO
+	show pin rpspi.00.rx
+	
+
+
+	

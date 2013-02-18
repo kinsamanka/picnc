@@ -166,7 +166,6 @@ FUNCTION(read_spi) {
 	if (period != old_dtns) {
 		old_dtns = period;
 		dt = period * 0.000000001;
-		test2 = dt;
 		recip_dt = 1.0 / dt;
 	}
 

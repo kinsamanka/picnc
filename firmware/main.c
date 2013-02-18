@@ -152,7 +152,7 @@ int main(void) {
 	while (1) {
 		/* process incoming data request
 		   transfer valid data to txBuf */
-		if (REQ_IO) {
+		if (REQ_IO_IN) {
 			stepgen_get_position((void *)&txBuf[1]);
 
 			/* sanity check */

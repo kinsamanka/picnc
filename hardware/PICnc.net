@@ -1,4 +1,4 @@
-# EESchema Netlist Version 1.1 created  Sunday 17,February,2013 01:55:57 PM SGT
+# EESchema Netlist Version 1.1 created  Monday 18,February,2013 08:09:34 AM SGT
 (
  ( /4FF3F6CF SM0402 C1 0.1uf
   ( 1 +3.3V )
@@ -36,7 +36,7 @@
   ( 1 /LED1 )
   ( 2 N-000062 )
  )
- ( /511392E7 pin_array_13x2 P1 CONN_13X2
+ ( /511392E7 pin_array_13x2 P1 RPi_GPIO
   ( 1 ? )
   ( 2 /VCC )
   ( 3 /GPIO_0 )
@@ -64,7 +64,7 @@
   ( 25 GND )
   ( 26 /MCLR )
  )
- ( /51139363 shrouded_pin_header_5x2 P2 CONN_5X2
+ ( /51139363 shrouded_pin_header_5x2 P2 STEP/DIR
   ( 1 +5V )
   ( 2 GND )
   ( 3 /XS )
@@ -76,7 +76,7 @@
   ( 9 /AS )
   ( 10 /AD )
  )
- ( /5119C222 shrouded_pin_header_10x2 P3 CONN_10X2
+ ( /5119C222 shrouded_pin_header_10x2 P3 3.3v_DIGITAL/ANALOG_IO
   ( 1 /AN_00 )
   ( 2 /AN_01 )
   ( 3 /AN_02 )
@@ -98,7 +98,7 @@
   ( 19 GND )
   ( 20 GND )
  )
- ( /511F63B8 shrouded_pin_header_8x2 P4 CONN_8X2
+ ( /511F63B8 shrouded_pin_header_8x2 P4 5v_IO
   ( 1 /IO_09 )
   ( 2 /IO_14 )
   ( 3 /IO_08 )
@@ -124,7 +124,7 @@
   ( 5 /IO_04 )
   ( 6 ? )
  )
- ( /51203010 pin_array_4x2 P6 CONN_4X2
+ ( /51203010 pin_array_4x2 P6 RPi_GPIO
   ( 1 /GPIO_0 )
   ( 2 /GPIO_24 )
   ( 3 /GPIO_1 )
@@ -134,11 +134,11 @@
   ( 7 /GPIO_17 )
   ( 8 GND )
  )
- ( /51203037 PIN_ARRAY_2X1 P7 CONN_2
+ ( /51203037 PIN_ARRAY_2X1 P7 5v_RPi
   ( 1 +5V )
   ( 2 /VCC )
  )
- ( /512070B5 $noname$ P8 CONN_2
+ ( /512070B5 PSH02-2PG P8 5v_INP
   ( 1 +5V )
   ( 2 GND )
  )

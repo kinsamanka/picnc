@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Sunday 17,February,2013 01:55:57 PM SGT
+Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Monday 18,February,2013 08:09:34 AM SGT
 
 BeginCmp
 TimeStamp = /4FF3F6CF;
@@ -66,28 +66,28 @@ EndCmp
 BeginCmp
 TimeStamp = /511392E7;
 Reference = P1;
-ValeurCmp = CONN_13X2;
+ValeurCmp = RPi_GPIO;
 IdModule  = pin_array_13x2;
 EndCmp
 
 BeginCmp
 TimeStamp = /51139363;
 Reference = P2;
-ValeurCmp = CONN_5X2;
+ValeurCmp = STEP/DIR;
 IdModule  = shrouded_pin_header_5x2;
 EndCmp
 
 BeginCmp
 TimeStamp = /5119C222;
 Reference = P3;
-ValeurCmp = CONN_10X2;
+ValeurCmp = 3.3v_DIGITAL/ANALOG_IO;
 IdModule  = shrouded_pin_header_10x2;
 EndCmp
 
 BeginCmp
 TimeStamp = /511F63B8;
 Reference = P4;
-ValeurCmp = CONN_8X2;
+ValeurCmp = 5v_IO;
 IdModule  = shrouded_pin_header_8x2;
 EndCmp
 
@@ -101,21 +101,21 @@ EndCmp
 BeginCmp
 TimeStamp = /51203010;
 Reference = P6;
-ValeurCmp = CONN_4X2;
+ValeurCmp = RPi_GPIO;
 IdModule  = pin_array_4x2;
 EndCmp
 
 BeginCmp
 TimeStamp = /51203037;
 Reference = P7;
-ValeurCmp = CONN_2;
+ValeurCmp = 5v_RPi;
 IdModule  = PIN_ARRAY_2X1;
 EndCmp
 
 BeginCmp
 TimeStamp = /512070B5;
 Reference = P8;
-ValeurCmp = CONN_2;
+ValeurCmp = 5v_INP;
 IdModule  = PSH02-2PG;
 EndCmp
 

@@ -23,6 +23,7 @@
 #include "hardware.h"
 #include "stepgen.h"
 
+#ifndef __USE_BOOTLDR__
 #pragma config \
 	FPLLODIV = DIV_1, \
 	FPLLMUL = MUL_20, \
@@ -34,6 +35,7 @@
 	CP = OFF, \
 	FSOSCEN = OFF, \
 	WDTPS = PS4096
+#endif
 
 #define BASEFREQ			160000
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)

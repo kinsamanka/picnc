@@ -1,4 +1,7 @@
-H		= ./uip
+
+USE_BOOTLOADER	= true
+
+H		= .
 M		= .
 S		= $(H)
 
@@ -8,11 +11,13 @@ ifndef GCCPREFIX
     GCCPREFIX   = /usr/local/pic32-tools/bin/pic32-
 endif
 
-
 DEFS		+= -I. -I$(H)
 
+ifeq ($(USE_BOOTLOADER),true)
+LDRFILE		= bootldr.ld 
+else
 LDRFILE		= bare-metal.ld 
-#LDRFILE		= bootldr.ld 
+endif
 
 DEPFLAGS	= -MT $@ -MD -MP -MF .deps/$*.dep
 CFLAGS		= -O $(DEFS) $(DEPFLAGS)
@@ -31,8 +36,13 @@ PIC32PROGCONF = -p
 CC		= $(GCCPREFIX)gcc -EL -g -mips32r2 -mprocessor=$(DEVICE) -O3
 CC		+= -Wextra -Wall -fno-exceptions -ffunction-sections
 CC		+= -fdata-sections -mno-smart-io 
+ifeq ($(USE_BOOTLOADER),true)
+CC		+= -D__USE_BOOTLDR__
+endif
+
 LDFLAGS         += -T $(LDRFILE) -lc -lm -Wl,-Map=picnc.map,--gc-sections
 #LDFLAGS         += --defsym=_min_heap_size=16000 --defsym=_min_stack_size=2048
+
 SIZE		= $(GCCPREFIX)size
 OBJDUMP		= $(GCCPREFIX)objdump
 OBJCOPY		= $(GCCPREFIX)objcopy
@@ -59,7 +69,7 @@ picnc.elf:	$(SRCOBJ) $(LDRFILE)
 		$(OBJDUMP) -d -S $@ > picnc.dis
 		$(BIN2HEX) $@
 
-load:           picnc.elf
+load:           .deps picnc.elf
 		$(PIC32PROG) $(PIC32PROGCONF) picnc.hex
 
 .o.dis:

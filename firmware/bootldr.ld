@@ -14,7 +14,6 @@ ENTRY(_reset)
 EXTERN (_min_stack_size _min_heap_size)
 PROVIDE(_min_stack_size = 0x800) ;
 PROVIDE(_min_heap_size = 0x800) ;
-
 /*************************************************************************
  * Processor-specific object file.  Contains SFR definitions.
  *************************************************************************/
@@ -24,16 +23,22 @@ INPUT("processor.o")
  * For interrupt vector handling
  *************************************************************************/
 PROVIDE(_vector_spacing = 0x00000001);
-_ebase_address  = 0x9D000000;
+_ebase_address =  0x9D000000;
 
 /*************************************************************************
  * Memory Address Equates
+ * _RESET_ADDR      -- Reset Vector
+ * _BEV_EXCPT_ADDR  -- Boot exception Vector
+ * _DBG_EXCPT_ADDR  -- In-circuit Debugging Exception Vector
+ * _DBG_CODE_ADDR   -- In-circuit Debug Executive address
+ * _DBG_CODE_SIZE   -- In-circuit Debug Executive size
+ * _GEN_EXCPT_ADDR  -- General Exception Vector
  *************************************************************************/
 _RESET_ADDR              = 0x9D001000;
-_EEPROM_ADDR             = 0x9D07F000;
 _BEV_EXCPT_ADDR          = 0xBFC00380;
 _DBG_EXCPT_ADDR          = 0xBFC00480;
 _DBG_CODE_ADDR           = 0xBFC02000;
+_DBG_CODE_SIZE           = 0xFF0     ;
 _GEN_EXCPT_ADDR          = _ebase_address + 0x180;
 
 /*************************************************************************
@@ -45,37 +50,28 @@ _GEN_EXCPT_ADDR          = _ebase_address + 0x180;
  *************************************************************************/
 MEMORY
 {
-  kseg0_program_mem    (rx)  : ORIGIN = 0x9D001000, LENGTH = 0x7B000
-  /* gap reserved for future eeprom usage */
-  kseg0_eeprom_mem           : ORIGIN = 0x9D07F000, LENGTH = 0x1000
-  kseg0_boot_mem             : ORIGIN = 0x9FC00490, LENGTH = 0
+  kseg0_program_mem    (rx)  : ORIGIN = 0x9D001000, LENGTH = 0x1F000
+  kseg0_boot_mem             : ORIGIN = 0x9D000000, LENGTH = 0x0
   exception_mem              : ORIGIN = 0x9D000000, LENGTH = 0x1000
-  kseg1_boot_mem             : ORIGIN = 0xBFC00000, LENGTH = 0 
-  debug_exec_mem             : ORIGIN = 0xBFC02000, LENGTH = 0
-  config3                    : ORIGIN = 0xBFC02FF0, LENGTH = 0 
-  config2                    : ORIGIN = 0xBFC02FF4, LENGTH = 0
-  config1                    : ORIGIN = 0xBFC02FF8, LENGTH = 0
-  config0                    : ORIGIN = 0xBFC02FFC, LENGTH = 0
-  kseg1_data_mem       (w!x) : ORIGIN = 0xA0000000, LENGTH = 0x20000
+  kseg1_boot_mem             : ORIGIN = 0x9D001000, LENGTH = 0x0
+  debug_exec_mem             : ORIGIN = 0xBFC02000, LENGTH = 0x0
+  kseg1_data_mem       (w!x) : ORIGIN = 0xA0000000, LENGTH = 0x8000
   sfrs                       : ORIGIN = 0xBF800000, LENGTH = 0x100000
-  configsfrs                 : ORIGIN = 0xBFC02FF0, LENGTH = 0x10
 }
 
+/*************************************************************************
+ * Configuration-word sections
+ *************************************************************************/
+PROVIDE(_DBG_CODE_ADDR = 0xBFC02000) ;
+PROVIDE(_DBG_CODE_SIZE = 0xFF0) ;
 SECTIONS
 {
   /* Boot Sections */
   .reset _RESET_ADDR :
   {
     KEEP(*(.reset))
+    KEEP(*(.startup))
   } > kseg0_program_mem
-  
-  .eeprom_pic32 _EEPROM_ADDR (NOLOAD):
-  { 
-    KEEP(*(.eeprom_pic32 .eeprom_pic32.*))
-  } > kseg0_eeprom_mem
-
-  /DISCARD/ : { *(.bev_handler) }
-
   .app_excpt _GEN_EXCPT_ADDR :
   {
     KEEP(*(.gen_handler))
@@ -400,63 +396,68 @@ SECTIONS
     KEEP(*(.vector_63))
   } > exception_mem
   ASSERT (_vector_spacing == 0 || SIZEOF(.vector_63) <= (_vector_spacing << 5), "function at exception vector 63 too large")
-  .startup :
+  /*  Starting with C32 v2.00, the startup code is in the .reset.startup section.
+   *  Keep this here for backwards compatibility.
+   */
+/*  .startup ORIGIN(kseg0_boot_mem) :
   {
     KEEP(*(.startup))
-  } > kseg0_program_mem
-  /* Code Sections */
-
-  .text  :
+  } > kseg0_boot_mem
+*/  /* Code Sections - Note that input sections *(.text) and *(.text.*)
+  ** are not mapped here. Starting in C32 v2.00, the best-fit allocator
+  ** locates them, so that .text may flow around absolute sections
+  ** as needed.
+  */
+  .text :
   {
-    _text_begin = . ;
-
-    *(.text .stub .text.* .gnu.linkonce.t.*)
+    *(.stub .gnu.linkonce.t.*)
     KEEP (*(.text.*personality*))
-    /* .gnu.warning sections are handled specially by elf32.em.  */
-    *(.gnu.warning)
     *(.mips16.fn.*)
     *(.mips16.call.*)
-
-    _text_end = . ;
-  } >kseg0_program_mem =0
-
-   .init      :
+    *(.gnu.warning)
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  /* Global-namespace object initialization */
+  .init   :
   {
-	KEEP (*crti.o(.init))
-	KEEP (*crtbegin.o(.init))
+    KEEP (*crti.o(.init))
+    KEEP (*crtbegin.o(.init))
     KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o *crtn.o ).init))
-	KEEP (*crtend.o(.init))
+    KEEP (*crtend.o(.init))
     KEEP (*crtn.o(.init))
-  }  >kseg0_program_mem
-
-  .fini       :
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  .fini   :
   {
     KEEP (*(.fini))
+    . = ALIGN(4) ;
   } >kseg0_program_mem
-
-  .preinit_array     :
+  .preinit_array   :
   {
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  }>kseg0_program_mem
-  .init_array     :
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  .init_array   :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
     KEEP (*(SORT(.init_array.*)))
     KEEP (*(.init_array))
     PROVIDE_HIDDEN (__init_array_end = .);
-  }>kseg0_program_mem
-  .fini_array     :
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  .fini_array   :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  }>kseg0_program_mem
-  .ctors        :
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  .ctors   :
   {
-    /* gcc uses crtbegin.o to find the start of
+    /* XC32 uses crtbegin.o to find the start of
        the constructors, so we make sure it is
        first.  Because this is a wildcard, it
        doesn't matter if the user does not
@@ -474,26 +475,21 @@ SECTIONS
     KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
     KEEP (*(SORT(.ctors.*)))
     KEEP (*(.ctors))
-  }>kseg0_program_mem
-  .dtors          :
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
+  .dtors   :
   {
     KEEP (*crtbegin.o(.dtors))
     KEEP (*crtbegin?.o(.dtors))
     KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
     KEEP (*(SORT(.dtors.*)))
     KEEP (*(.dtors))
-  }>kseg0_program_mem
-
-  .preinit_array    :
-  {
-    KEEP (*(.preinit_array))
-  }>kseg0_program_mem
-
-
+    . = ALIGN(4) ;
+  } >kseg0_program_mem
   /* Read-only sections */
   .rodata   :
   {
-    *(.rodata .rodata.* .gnu.linkonce.r.*)
+    *( .gnu.linkonce.r.*)
     *(.rodata1)
     . = ALIGN(4) ;
   } >kseg0_program_mem
@@ -502,7 +498,7 @@ SECTIONS
    * .sdata2 section.  This is different from .sdata, which contains small
    * initialized non-constant global and static data.
    */
-  .sdata2 ALIGN(4)   :
+  .sdata2 ALIGN(4) :
   {
     *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
     . = ALIGN(4) ;
@@ -512,23 +508,52 @@ SECTIONS
    * always be zero).  Again, this is different from .sbss, which contains
    * small non-initialized, non-constant global and static data.
    */
-  .sbss2 ALIGN(4)   :
+  .sbss2 ALIGN(4) :
   {
     *(.sbss2 .sbss2.* .gnu.linkonce.sb2.*)
     . = ALIGN(4) ;
   } >kseg0_program_mem
-
+  .eh_frame_hdr   :
+  {
+    *(.eh_frame_hdr)
+  } >kseg0_program_mem
+    . = ALIGN(4) ;
+  .eh_frame   : ONLY_IF_RO
+  {
+    KEEP (*(.eh_frame))
+  } >kseg0_program_mem
+    . = ALIGN(4) ;
+  .gcc_except_table   : ONLY_IF_RO
+  {
+    *(.gcc_except_table .gcc_except_table.*)
+  } >kseg0_program_mem
+    . = ALIGN(4) ;
   .dbg_data (NOLOAD) :
   {
     . += (DEFINED (_DEBUGGER) ? 0x200 : 0x0);
   } >kseg1_data_mem
-
-  /* Persistent data */
-  .persist :
+  .jcr   :
+  {
+    KEEP (*(.jcr))
+    . = ALIGN(4) ;
+  } >kseg1_data_mem
+  .eh_frame    : ONLY_IF_RW
+  {
+    KEEP (*(.eh_frame))
+  } >kseg1_data_mem
+    . = ALIGN(4) ;
+  .gcc_except_table    : ONLY_IF_RW
+  {
+    *(.gcc_except_table .gcc_except_table.*)
+  } >kseg1_data_mem
+    . = ALIGN(4) ;
+  /* Persistent data - Use the new C 'persistent' attribute instead. */
+  .persist   :
   {
     _persist_begin = .;
     *(.persist .persist.*)
-    . = ALIGN(4);
+    *(.pbss .pbss.*)
+    . = ALIGN(4) ;
     _persist_end = .;
   } >kseg1_data_mem
   .data  ALIGN(4)  :
@@ -552,42 +577,51 @@ SECTIONS
    * can access them all, and initialized data all before uninitialized, so
    * we can shorten the on-disk segment size.
    */
-  .sdata ALIGN(4)   :
+  .sdata ALIGN(4) :
   {
     _sdata_begin = . ;
     *(.sdata .sdata.* .gnu.linkonce.s.*)
+    . = ALIGN(4) ;
     _sdata_end = . ;
-  } >kseg1_data_mem AT>kseg0_program_mem
+  } >kseg1_data_mem
   .lit8           :
   {
     *(.lit8)
-  } >kseg1_data_mem AT>kseg0_program_mem
+  } >kseg1_data_mem
   .lit4           :
   {
     *(.lit4)
-  } >kseg1_data_mem AT>kseg0_program_mem
+  } >kseg1_data_mem
   . = ALIGN (4) ;
   _data_end = . ;
   _bss_begin = . ;
-  .sbss ALIGN(4)   :
+  .sbss ALIGN(4) :
   {
     _sbss_begin = . ;
     *(.dynsbss)
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
     _sbss_end = . ;
+    . = ALIGN(4) ;
   } >kseg1_data_mem
-  .bss ALIGN(4)  :
+  /*
+   * Align here to ensure that the .bss section occupies space up to
+   * _end.  Align after .bss to ensure correct alignment even if the
+   * .bss section disappears because there are no input sections.
+   *
+   * Note that input sections named .bss* are no longer mapped here.
+   * Starting in C32 v2.00, the best-fit allocator locates them, so
+   * that they may flow around absolute sections as needed.
+   *
+   */
+  .bss     :
   {
     *(.dynbss)
-    *(.bss .bss.* .gnu.linkonce.b.*)
     *(COMMON)
-    /*
-     * Align here to ensure that the .bss section occupies space up to
-     * _end.  Align after .bss to ensure correct alignment even if the
-     * .bss section disappears because there are no input sections.
-     */
-    . = ALIGN(4) ;
+   /* Align here to ensure that the .bss section occupies space up to
+      _end.  Align after .bss to ensure correct alignment even if the
+      .bss section disappears because there are no input sections. */
+   . = ALIGN(. != 0 ? 4 : 1);
   } >kseg1_data_mem
   . = ALIGN(4) ;
   _end = . ;
@@ -637,10 +671,16 @@ SECTIONS
     "Not enough space to allocate both stack and heap.  Reduce heap and/or stack size.")
     /* The .pdr section belongs in the absolute section */
     /DISCARD/ : { *(.pdr) }
-    /* We don't load .reginfo onto the target, so don't locate it
-     * in real memory
-     */
-    /DISCARD/ : { *(.reginfo) }
+  .gptab.sdata : { *(.gptab.data) *(.gptab.sdata) }
+  .gptab.sbss : { *(.gptab.bss) *(.gptab.sbss) }
+  .mdebug.abi32 : { KEEP(*(.mdebug.abi32)) }
+  .mdebug.abiN32 : { KEEP(*(.mdebug.abiN32)) }
+  .mdebug.abi64 : { KEEP(*(.mdebug.abi64)) }
+  .mdebug.abiO64 : { KEEP(*(.mdebug.abiO64)) }
+  .mdebug.eabi32 : { KEEP(*(.mdebug.eabi32)) }
+  .mdebug.eabi64 : { KEEP(*(.mdebug.eabi64)) }
+  .gcc_compiled_long32 : { KEEP(*(.gcc_compiled_long32)) }
+  .gcc_compiled_long64 : { KEEP(*(.gcc_compiled_long64)) }
   /* Stabs debugging sections.  */
   .stab          0 : { *(.stab) }
   .stabstr       0 : { *(.stabstr) }
@@ -667,25 +707,17 @@ SECTIONS
   .debug_line     0 : { *(.debug_line) }
   .debug_frame    0 : { *(.debug_frame) }
   .debug_str      0 : { *(.debug_str) }
-  .debug_loc      0  : { *(.debug_loc) }
+  .debug_loc      0 : { *(.debug_loc) }
   .debug_macinfo  0 : { *(.debug_macinfo) }
   /* SGI/MIPS DWARF 2 extensions */
   .debug_weaknames 0 : { *(.debug_weaknames) }
   .debug_funcnames 0 : { *(.debug_funcnames) }
   .debug_typenames 0 : { *(.debug_typenames) }
   .debug_varnames  0 : { *(.debug_varnames) }
-  /* DWARF 3 */
   .debug_pubtypes 0 : { *(.debug_pubtypes) }
   .debug_ranges   0 : { *(.debug_ranges) }
-  .gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }
-  .gptab.sdata : { *(.gptab.data) *(.gptab.sdata) }
-  .gptab.sbss : { *(.gptab.bss) *(.gptab.sbss) }
-  .mdebug.abi32 : { KEEP(*(.mdebug.abi32)) }
-  .mdebug.abiN32 : { KEEP(*(.mdebug.abiN32)) }
-  .mdebug.abi64 : { KEEP(*(.mdebug.abi64)) }
-  .mdebug.abiO64 : { KEEP(*(.mdebug.abiO64)) }
-  .mdebug.eabi32 : { KEEP(*(.mdebug.eabi32)) }
-  .mdebug.eabi64 : { KEEP(*(.mdebug.eabi64)) }
   /DISCARD/ : { *(.rel.dyn) }
-  /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }
+  .gnu.attributes 0 : { KEEP (*(.gnu.attributes)) }
+  /DISCARD/ : { *(.note.GNU-stack) }
+  /DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) *(.discard) }
 }

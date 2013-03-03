@@ -1,4 +1,4 @@
-EESchema Schematic File Version 2  date Sunday 03,March,2013 08:11:05 AM SGT
+EESchema Schematic File Version 2  date Sunday 03,March,2013 10:28:22 PM SGT
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -37,7 +37,7 @@ encoding utf-8
 Sheet 1 1
 Title "Raspberry Pi PICnc Board"
 Date "3 mar 2013"
-Rev "A0"
+Rev "A1"
 Comp ""
 Comment1 ""
 Comment2 ""
@@ -136,7 +136,6 @@ Wire Wire Line
 	9050 5000 9050 4900
 Wire Wire Line
 	7350 6750 6350 6750
-Connection ~ 7350 6750
 Wire Wire Line
 	9350 1600 9350 3200
 Wire Wire Line
@@ -146,7 +145,6 @@ Wire Wire Line
 	7700 4350 7950 4350
 Wire Wire Line
 	7700 4250 7950 4250
-Connection ~ 7950 4250
 Wire Wire Line
 	7700 5350 7950 5350
 Connection ~ 3750 1300
@@ -311,7 +309,6 @@ Wire Wire Line
 	6650 2650 6650 2750
 Wire Wire Line
 	6650 2750 6900 2750
-Connection ~ 7350 6150
 Wire Wire Line
 	6350 6150 7350 6150
 Wire Wire Line

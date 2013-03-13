@@ -1,34 +1,6 @@
-EESchema Schematic File Version 2  date Sunday 03,March,2013 10:28:22 PM SGT
+EESchema Schematic File Version 2  date Wednesday 13,March,2013 07:24:26 PM SGT
+LIBS:PICnc-cache
 LIBS:power
-LIBS:device
-LIBS:transistors
-LIBS:conn
-LIBS:linear
-LIBS:regul
-LIBS:74xx
-LIBS:cmos4000
-LIBS:adc-dac
-LIBS:memory
-LIBS:xilinx
-LIBS:special
-LIBS:microcontrollers
-LIBS:dsp
-LIBS:microchip
-LIBS:analog_switches
-LIBS:motorola
-LIBS:texas
-LIBS:intel
-LIBS:audio
-LIBS:interface
-LIBS:digital-audio
-LIBS:philips
-LIBS:display
-LIBS:cypress
-LIBS:siliconi
-LIBS:opto
-LIBS:atmel
-LIBS:contrib
-LIBS:valves
 LIBS:PICnc-cache
 EELAYER 25  0
 EELAYER END
@@ -36,7 +8,7 @@ $Descr A4 11700 8267
 encoding utf-8
 Sheet 1 1
 Title "Raspberry Pi PICnc Board"
-Date "3 mar 2013"
+Date "13 mar 2013"
 Rev "A1"
 Comp ""
 Comment1 ""
@@ -526,8 +498,8 @@ $Comp
 L +5V #PWR02
 U 1 1 512070B4
 P 9050 5400
-F 0 "#PWR02" H 9050 5490 20  0001 C CNN
-F 1 "+5V" H 9050 5490 30  0000 C CNN
+F 0 "#PWR02" H 9050 5360 30  0001 C CNN
+F 1 "+5V" H 9050 5510 30  0000 C CNN
 	1    9050 5400
 	1    0    0    -1  
 $EndComp
@@ -562,8 +534,8 @@ $Comp
 L +5V #PWR04
 U 1 1 512030D0
 P 9050 4900
-F 0 "#PWR04" H 9050 4990 20  0001 C CNN
-F 1 "+5V" H 9050 4990 30  0000 C CNN
+F 0 "#PWR04" H 9050 4860 30  0001 C CNN
+F 1 "+5V" H 9050 5010 30  0000 C CNN
 	1    9050 4900
 	1    0    0    -1  
 $EndComp
@@ -645,8 +617,8 @@ $Comp
 L +5V #PWR05
 U 1 1 511F206D
 P 6650 2650
-F 0 "#PWR05" H 6650 2740 20  0001 C CNN
-F 1 "+5V" H 6650 2740 30  0000 C CNN
+F 0 "#PWR05" H 6650 2610 30  0001 C CNN
+F 1 "+5V" H 6650 2760 30  0000 C CNN
 	1    6650 2650
 	1    0    0    -1  
 $EndComp
@@ -817,8 +789,8 @@ $Comp
 L +5V #PWR010
 U 1 1 5003963F
 P 9350 1600
-F 0 "#PWR010" H 9350 1690 20  0001 C CNN
-F 1 "+5V" H 9350 1690 30  0000 C CNN
+F 0 "#PWR010" H 9350 1560 30  0001 C CNN
+F 1 "+5V" H 9350 1710 30  0000 C CNN
 	1    9350 1600
 	1    0    0    -1  
 $EndComp
@@ -869,8 +841,8 @@ $Comp
 L +5V #PWR011
 U 1 1 5001906A
 P 3650 5750
-F 0 "#PWR011" H 3650 5840 20  0001 C CNN
-F 1 "+5V" H 3650 5840 30  0000 C CNN
+F 0 "#PWR011" H 3650 5710 30  0001 C CNN
+F 1 "+5V" H 3650 5860 30  0000 C CNN
 	1    3650 5750
 	1    0    0    -1  
 $EndComp
@@ -973,8 +945,8 @@ $Comp
 L CSTCC X1
 U 1 1 5000B524
 P 2650 6250
-F 0 "X1" H 5120 12630 50  0000 L BNN
-F 1 "8Mhz" H 5370 12630 50  0000 L BNN
+F 0 "X1" H 2470 6380 50  0000 L BNN
+F 1 "8Mhz" H 2720 6380 50  0000 L BNN
 F 2 "resonators-CSTCC" H 5300 12650 50  0001 C CNN
 F 4 "1170435" H 2650 6250 60  0001 C CNN "Element14 Order Code"
 F 5 "MURATA - CSTCC8M00G53-R0" H 2650 6250 60  0001 C CNN "Mftr. & Part No."
@@ -985,8 +957,8 @@ $Comp
 L VEE #PWR18
 U 1 1 4FF3FF79
 P 7900 6050
-F 0 "#PWR18" H 7900 6250 40  0001 C CNN
-F 1 "VCore" H 7900 6200 40  0000 C CNN
+F 0 "#PWR18" H 7900 6010 30  0001 C CNN
+F 1 "VCore" H 7900 6160 30  0000 C CNN
 	1    7900 6050
 	1    0    0    -1  
 $EndComp
@@ -994,8 +966,8 @@ $Comp
 L VEE #PWR3
 U 1 1 4FF3FF47
 P 3550 1250
-F 0 "#PWR3" H 3550 1450 40  0001 C CNN
-F 1 "VCore" H 3550 1400 40  0000 C CNN
+F 0 "#PWR3" H 3550 1210 30  0001 C CNN
+F 1 "VCore" H 3550 1360 30  0000 C CNN
 	1    3550 1250
 	1    0    0    -1  
 $EndComp

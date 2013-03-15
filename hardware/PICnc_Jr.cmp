@@ -1,4 +1,4 @@
-Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Tuesday 12,March,2013 08:29:55 PM SGT
+Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Friday 15,March,2013 09:19:33 PM SGT
 
 BeginCmp
 TimeStamp = /513BFBC0;
@@ -94,21 +94,42 @@ EndCmp
 BeginCmp
 TimeStamp = /500185A0;
 Reference = D1;
-ValeurCmp = LED;
+ValeurCmp = Power_LED;
 IdModule  = LED-1206;
 EndCmp
 
 BeginCmp
 TimeStamp = /513C85AE;
 Reference = D2;
-ValeurCmp = LED;
+ValeurCmp = Status_LED;
 IdModule  = LED-1206;
+EndCmp
+
+BeginCmp
+TimeStamp = /5141BD3A;
+Reference = F1;
+ValeurCmp = 10A;
+IdModule  = polyfuse-10;
+EndCmp
+
+BeginCmp
+TimeStamp = /5141BD2E;
+Reference = F2;
+ValeurCmp = 5A;
+IdModule  = polyfuse-10;
+EndCmp
+
+BeginCmp
+TimeStamp = /51427062;
+Reference = F3;
+ValeurCmp = 750mA;
+IdModule  = SM1206;
 EndCmp
 
 BeginCmp
 TimeStamp = /513C5E16;
 Reference = P1;
-ValeurCmp = CONN_3X2;
+ValeurCmp = JP;
 IdModule  = pin_array_3x2;
 EndCmp
 
@@ -129,7 +150,7 @@ EndCmp
 BeginCmp
 TimeStamp = /513C6409;
 Reference = P4;
-ValeurCmp = CONN_3X2;
+ValeurCmp = JP;
 IdModule  = pin_array_3x2;
 EndCmp
 
@@ -150,7 +171,7 @@ EndCmp
 BeginCmp
 TimeStamp = /513C645D;
 Reference = P7;
-ValeurCmp = CONN_3X2;
+ValeurCmp = JP;
 IdModule  = pin_array_3x2;
 EndCmp
 
@@ -192,7 +213,7 @@ EndCmp
 BeginCmp
 TimeStamp = /513C6458;
 Reference = P13;
-ValeurCmp = CONN_3X2;
+ValeurCmp = JP;
 IdModule  = pin_array_3x2;
 EndCmp
 
@@ -234,14 +255,14 @@ EndCmp
 BeginCmp
 TimeStamp = /513C6ACF;
 Reference = P19;
-ValeurCmp = HT_TIP;
+ValeurCmp = TIP;
 IdModule  = Socket_MOLEX-KK-RM2-54mm_Lock_4pin_straight;
 EndCmp
 
 BeginCmp
 TimeStamp = /513C69B2;
 Reference = P20;
-ValeurCmp = HT_BED;
+ValeurCmp = BED;
 IdModule  = Socket_MOLEX-KK-RM2-54mm_Lock_4pin_straight;
 EndCmp
 
@@ -255,22 +276,29 @@ EndCmp
 BeginCmp
 TimeStamp = /513D43CE;
 Reference = P22;
-ValeurCmp = CONN_4X2;
+ValeurCmp = EXTRA_GPIO;
 IdModule  = pin_array_4x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /5141AC6D;
+Reference = P23;
+ValeurCmp = MOT-Z;
+IdModule  = PIN_ARRAY_4x1;
 EndCmp
 
 BeginCmp
 TimeStamp = /513C6ACE;
 Reference = Q1;
 ValeurCmp = MOSFET_N;
-IdModule  = DPAK2;
+IdModule  = TO220_VERT;
 EndCmp
 
 BeginCmp
 TimeStamp = /513C69C0;
 Reference = Q2;
 ValeurCmp = MOSFET_N;
-IdModule  = DPAK2;
+IdModule  = TO220_VERT;
 EndCmp
 
 BeginCmp
@@ -403,6 +431,20 @@ BeginCmp
 TimeStamp = /513D4F9E;
 Reference = R19;
 ValeurCmp = 10;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /5142FFA3;
+Reference = R20;
+ValeurCmp = 20;
+IdModule  = SM0805;
+EndCmp
+
+BeginCmp
+TimeStamp = /51430050;
+Reference = R21;
+ValeurCmp = 20;
 IdModule  = SM0805;
 EndCmp
 

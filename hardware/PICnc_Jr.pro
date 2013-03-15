@@ -1,4 +1,4 @@
-update=Wednesday 13,March,2013 06:23:50 PM SGT
+update=Friday 15,March,2013 08:46:34 PM SGT
 last_client=eeschema
 [pcbnew]
 version=1
@@ -32,7 +32,8 @@ LibName11=valves
 LibName12=contrib/Socket_MOLEX-KK-System
 LibName13=contrib/MountingHole_RevA
 LibName14=smd_capacitors
-LibDir=
+LibName15=polyfuse-10
+LibDir=../../kicad/lbr
 [cvpcb]
 version=1
 NetIExt=net

@@ -24,17 +24,17 @@
 #include "stepgen.h"
 
 #ifndef __USE_BOOTLDR__
-#pragma config \
-	FPLLODIV = DIV_1, \
-	FPLLMUL = MUL_20, \
-	FPLLIDIV = DIV_2, \
-	FWDTEN = OFF, \
-	FPBDIV = DIV_1,\
-	POSCMOD = XT, \
-	FNOSC = PRIPLL, \
-	CP = OFF, \
-	FSOSCEN = OFF, \
-	WDTPS = PS4096
+#pragma config POSCMOD = XT		/* Primary Oscillator XT mode */
+#pragma config FNOSC = PRIPLL		/* Primary Osc w/PLL */
+#pragma config FPLLODIV = DIV_1		/* PLL configured for 80MHz clock */
+#pragma config FPLLMUL = MUL_20
+#pragma config FPLLIDIV = DIV_2
+#pragma config FPBDIV = DIV_1		/* Peripheral Clock Divisor */
+#pragma config IESO = ON		/* Internal/External Switch Over disabled */
+#pragma config FSOSCEN = OFF		/* Secondary Oscillator disabled */
+#pragma config CP = OFF			/* Code Protect Disabled */
+#pragma config FWDTEN = OFF		/* Watchdog Timer Disable */
+#pragma config WDTPS = PS4096		/* Watchdog Timer Postscaler */
 #endif
 
 #define BASEFREQ			160000
@@ -49,8 +49,8 @@
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready = 0;
 
-void init_io_ports() {
-
+void init_io_ports()
+{
 	/* disable all analog pins */
 	AD1PCFG = 0xFFFF;
 
@@ -65,14 +65,14 @@ void init_io_ports() {
 	/* data request */
 	REQ_TRIS = 1;
 
-	/* configure step and dir pins
+	/* configure step and dir pins as outputs and
 	   enable open collector */
 	TRISECLR = BIT_7 | BIT_6 | BIT_5 | BIT_4 | BIT_3 | BIT_2 | BIT_1 | BIT_0;
 	ODCESET = BIT_7 | BIT_6 | BIT_5 | BIT_4 | BIT_3 | BIT_2 | BIT_1 | BIT_0;
 }
 
-void init_spi() {
-
+void init_spi()
+{
 	/* configure SPI */
 	SpiChnEnable(SPICHAN, 0);
 
@@ -82,14 +82,14 @@ void init_spi() {
 
 	/* start SPI */
 	SpiChnEnable(SPICHAN, 1);
-	
+
 	/* preload buffer */
 	SPI2BUF = 0x88;
 }
 
-void init_dma() {
-
-	/* open and configure the DMA channels 
+void init_dma()
+{
+	/* open and configure the DMA channels
 	     DMA 0 is for SPI -> buffer, this is the master channel, auto enabled
 	     DMA 1 is for buffer -> SPI, this channel is chained to DMA 0 */
 	DmaChnOpen(DMA_CHANNEL0, DMA_CHN_PRI3, DMA_OPEN_AUTO);
@@ -117,7 +117,8 @@ void init_dma() {
 	DmaChnEnable(0);
 }
 
-int main(void) {
+int main(void)
+{
 	int spi_inactive;
 	static uint32_t x = 0;
 
@@ -132,7 +133,7 @@ int main(void) {
 	OpenCoreTimer(CORE_TICK_RATE);
 
 	/* set up the core timer interrupt */
-	mConfigIntCoreTimer((CT_INT_ON | CT_INT_PRIOR_7 | CT_INT_SUB_PRIOR_0));
+	mConfigIntCoreTimer((CT_INT_ON | CT_INT_PRIOR_6 | CT_INT_SUB_PRIOR_0));
 
 	/* enable multi vector interrupts */
 	INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
@@ -152,7 +153,7 @@ int main(void) {
 
 	/* main loop */
 	while (1) {
-		/* process incoming data request
+		/* process incoming data request,
 		   transfer valid data to txBuf */
 		if (REQ_IO_IN) {
 			stepgen_get_position((void *)&txBuf[1]);
@@ -173,6 +174,7 @@ int main(void) {
 		if (spi_data_ready) {
 			spi_data_ready = 0;
 
+			/* the first byte received is a command byte */
 			switch (rxBuf[0]) {
 			case 0x5453523E:	/* >RST */
 				stepgen_reset();
@@ -188,7 +190,7 @@ int main(void) {
 			spi_inactive = 2000000L;
 			stepgen_reset();
 		}
-		
+
 		/* blink onboard led */
 		if (x++ == 500000L) {
 			x = 0;
@@ -202,18 +204,20 @@ int main(void) {
 	return 0;
 }
 
-void __ISR(_CORE_TIMER_VECTOR, ipl7) CoreTimerHandler(void) {
-
-	// update the period
+void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void)
+{
+	/* update the period */
 	UpdateCoreTimer(CORE_TICK_RATE);
 
+	/* do repetitive tasks here */
 	stepgen();
 
-	// clear the interrupt flag
+	/* clear the interrupt flag */
 	mCTClearIntFlag();
 }
 
-void __ISR(_DMA0_VECTOR, ipl5) DmaHandler0(void) {
+void __ISR(_DMA0_VECTOR, ipl5) DmaHandler0(void)
+{
 	int	evFlags;
 
 	/* acknowledge interrupt */

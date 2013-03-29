@@ -44,7 +44,7 @@
 #define SPIBUFSIZE			64		/* BCM2835 SPI buffer size */
 #define BUFSIZE				(SPIBUFSIZE/4)
 
-#define ENABLE_WATCHDOG
+//#define ENABLE_WATCHDOG
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready = 0;
@@ -74,12 +74,13 @@ void init_io_ports()
 	LED0_TRIS = 0;
 	LED0_IO = 0;
 
-	/* data ready */
+	/* data ready, active low */
 	RDY_TRIS = 0;
-	RDY_IO = 0;
+	RDY_IO = 1;
 
-	/* data request */
+	/* data request, active low, pull-up enabled */
 	REQ_TRIS = 1;
+	REQ_CNPU_Enable();
 
 	/* motor enable, active low */
 	MOT_EN_TRIS = 0;
@@ -183,8 +184,9 @@ int main(void)
 	while (1) {
 
 		/* process incoming data request,
-		   transfer valid data to txBuf */
-		if (REQ_IO_IN) {
+		   transfer valid data to txBuf,
+		   request line active low	  */
+		if (!REQ_IO_IN) {
 			stepgen_get_position((void *)&txBuf[1]);
 
 			/* sanity check */
@@ -197,9 +199,9 @@ int main(void)
 			/* enable motors */
 			MOT_EN_IO = 0;
 
-			RDY_IO_1;
+			RDY_IO_0;	/* the ready line is active low */
 		} else {
-			RDY_IO_0;
+			RDY_IO_1;
 		}
 
 		/* process received data */
@@ -218,8 +220,8 @@ int main(void)
 		}
 
 		/* shutdown stepgen if no activity */
-		if (spi_inactive++ > 2000000L) {
-			spi_inactive = 2000000L;
+		if (spi_inactive++ > 20000L) {
+			spi_inactive = 20000L;
 			stepgen_reset();
 			/* disable motors */
 			MOT_EN_IO = 1;

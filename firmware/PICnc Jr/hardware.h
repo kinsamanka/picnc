@@ -24,6 +24,10 @@
 
 #define REQ_TRIS		(TRISAbits.TRISA1)
 #define REQ_IO_IN		(PORTAbits.RA1)
+#define REQ_CNPU_Enable()							\
+	do {									\
+		ConfigCNAPullups(CNA1_PULLUP_ENABLE);				\
+	} while (0)
 
 #define RDY_TRIS		(TRISBbits.TRISB0)
 #define RDY_IO			(LATBbits.LATB0)

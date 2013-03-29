@@ -32,7 +32,7 @@
 #pragma config IESO = ON		/* Internal/External Switch Over disabled */
 #pragma config FSOSCEN = OFF		/* Secondary Oscillator disabled */
 #pragma config CP = OFF			/* Code Protect Disabled */
-#pragma config FWDTEN = ON		/* Watchdog Timer Enable */
+#pragma config FWDTEN = OFF		/* Watchdog Timer Enable */
 #pragma config WDTPS = PS4096		/* Watchdog Timer Postscaler */
 #pragma config PMDL1WAY = OFF		/* Allow multiple PM configurations */
 #pragma config IOL1WAY = OFF		/* Allow multiple PPS configurations */
@@ -80,6 +80,10 @@ void init_io_ports()
 
 	/* data request */
 	REQ_TRIS = 1;
+
+	/* motor enable, active low */
+	MOT_EN_TRIS = 0;
+	MOT_EN_IO = 1;
 
 	/* configure step and dir pins as outputs */
 	STEP_A_TRIS = 0;
@@ -189,6 +193,9 @@ int main(void)
 
 			/* reset spi_inactive */
 			spi_inactive = 0;
+			
+			/* enable motors */
+			MOT_EN_IO = 0;
 
 			RDY_IO_1;
 		} else {
@@ -214,6 +221,8 @@ int main(void)
 		if (spi_inactive++ > 2000000L) {
 			spi_inactive = 2000000L;
 			stepgen_reset();
+			/* disable motors */
+			MOT_EN_IO = 1;
 		}
 
 		/* blink onboard led */

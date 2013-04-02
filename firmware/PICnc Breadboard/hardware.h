@@ -16,6 +16,11 @@
 		PPSOutput(2, RPA1, SDO2);					\
 	} while (0)
 
+#define configure_inputs()							\
+	do {									\
+		TRISBSET = BIT_9 | BIT_8 | BIT_7 | BIT_6 | BIT_5 ;		\
+	} while (0)
+
 #define LED0_TRIS		(TRISAbits.TRISA0)
 #define LED0_IO			(LATAbits.LATA0)
 

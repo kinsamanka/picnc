@@ -70,6 +70,9 @@ void init_io_ports()
 	ANSELA = 0x0;
 	ANSELB = 0x0;
 
+	/* setup inputs */
+	configure_inputs();
+
 	/* LED */
 	LED0_TRIS = 0;
 	LED0_IO = 0;

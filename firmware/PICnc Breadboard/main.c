@@ -183,8 +183,9 @@ int main(void)
 	while (1) {
 
 		/* process incoming data request,
-		   transfer valid data to txBuf */
-		if (REQ_IO_IN) {
+		   transfer valid data to txBuf,
+		   request line active low	  */
+		if (!REQ_IO_IN) {
 			i = stepgen_get_position((void *)&txBuf[1]);
 			
 			/* read inputs */

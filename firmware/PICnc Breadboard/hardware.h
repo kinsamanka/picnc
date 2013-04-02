@@ -26,6 +26,7 @@
 
 #define REQ_TRIS		(TRISBbits.TRISB1)
 #define REQ_IO_IN		(PORTBbits.RB1)
+
 #define REQ_CNPU_Enable()							\
 	do {									\
 		ConfigCNBPullups(CNB1_PULLUP_ENABLE);				\

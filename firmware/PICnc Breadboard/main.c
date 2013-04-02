@@ -74,12 +74,13 @@ void init_io_ports()
 	LED0_TRIS = 0;
 	LED0_IO = 0;
 
-	/* data ready */
+	/* data ready, active low */
 	RDY_TRIS = 0;
-	RDY_IO = 0;
+	RDY_IO = 1;
 
-	/* data request */
+	/* data request, active low, pull-up enabled */
 	REQ_TRIS = 1;
+	REQ_CNPU_Enable();
 
 	/* configure step and dir pins as outputs */
 	STEP_A_TRIS = 0;
@@ -142,7 +143,7 @@ void init_dma()
 
 int main(void)
 {
-	int spi_inactive;
+	int spi_timeout, i;
 	static uint32_t x = 0;
 
 	/* Disable JTAG port so we get our I/O pins back */
@@ -169,7 +170,7 @@ int main(void)
 
 	stepgen_reset();
 	spi_data_ready = 0;
-	spi_inactive = 0;
+	spi_timeout = 0;
 
 #if defined(ENABLE_WATCHDOG)
 	WDTCONSET = 0x8000;
@@ -181,18 +182,21 @@ int main(void)
 		/* process incoming data request,
 		   transfer valid data to txBuf */
 		if (REQ_IO_IN) {
-			stepgen_get_position((void *)&txBuf[1]);
+			i = stepgen_get_position((void *)&txBuf[1]);
+			
+			/* read inputs */
+			txBuf[1+i] = PORTB;
 
 			/* sanity check */
 			txBuf[0] = rxBuf[0];
 			txBuf[BUFSIZE-1] = rxBuf[0] >> 8;
 
-			/* reset spi_inactive */
-			spi_inactive = 0;
+			/* reset spi_timeout */
+			spi_timeout = 0;
 
-			RDY_IO_1;
+			RDY_IO_0;	/* the ready line is active low */
 		} else {
-			RDY_IO_0;
+			RDY_IO_1;
 		}
 
 		/* process received data */
@@ -211,13 +215,13 @@ int main(void)
 		}
 
 		/* shutdown stepgen if no activity */
-		if (spi_inactive++ > 2000000L) {
-			spi_inactive = 2000000L;
+		if (spi_timeout++ > 20000L) {
+			spi_timeout = 20000L;
 			stepgen_reset();
 		}
 
 		/* blink onboard led */
-		if (x++ == 500000L) {
+		if (x++ == 250000L) {
 			x = 0;
 			LED0_IO ^= 1;
 		}

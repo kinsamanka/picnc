@@ -32,7 +32,7 @@
 #pragma config IESO = ON		/* Internal/External Switch Over disabled */
 #pragma config FSOSCEN = OFF		/* Secondary Oscillator disabled */
 #pragma config CP = OFF			/* Code Protect Disabled */
-#pragma config FWDTEN = OFF		/* Watchdog Timer Enable */
+#pragma config FWDTEN = ON		/* Watchdog Timer Enable */
 #pragma config WDTPS = PS4096		/* Watchdog Timer Postscaler */
 #pragma config PMDL1WAY = OFF		/* Allow multiple PM configurations */
 #pragma config IOL1WAY = OFF		/* Allow multiple PPS configurations */
@@ -44,7 +44,7 @@
 #define SPIBUFSIZE			64		/* BCM2835 SPI buffer size */
 #define BUFSIZE				(SPIBUFSIZE/4)
 
-//#define ENABLE_WATCHDOG
+#define ENABLE_WATCHDOG
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready = 0;
@@ -147,7 +147,7 @@ void init_dma()
 
 int main(void)
 {
-	int spi_inactive;
+	int spi_timeout;
 	static uint32_t x = 0;
 
 	/* Disable JTAG port so we get our I/O pins back */
@@ -174,7 +174,7 @@ int main(void)
 
 	stepgen_reset();
 	spi_data_ready = 0;
-	spi_inactive = 0;
+	spi_timeout = 0;
 
 #if defined(ENABLE_WATCHDOG)
 	WDTCONSET = 0x8000;
@@ -193,8 +193,8 @@ int main(void)
 			txBuf[0] = rxBuf[0];
 			txBuf[BUFSIZE-1] = rxBuf[0] >> 8;
 
-			/* reset spi_inactive */
-			spi_inactive = 0;
+			/* reset spi_timeout */
+			spi_timeout = 0;
 			
 			/* enable motors */
 			MOT_EN_IO = 0;
@@ -220,15 +220,15 @@ int main(void)
 		}
 
 		/* shutdown stepgen if no activity */
-		if (spi_inactive++ > 20000L) {
-			spi_inactive = 20000L;
+		if (spi_timeout++ > 20000L) {
+			spi_timeout = 20000L;
 			stepgen_reset();
 			/* disable motors */
 			MOT_EN_IO = 1;
 		}
 
 		/* blink onboard led */
-		if (x++ == 500000L) {
+		if (x++ == 250000L) {
 			x = 0;
 			LED0_IO ^= 1;
 		}

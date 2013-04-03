@@ -105,8 +105,8 @@ void init_spi()
 	/* configure SPI */
 	SpiChnEnable(SPICHAN, 0);
 
-	/* Slave mode, enable SS input, CKE, 8 bits, enhanced buffer, interrupt on rx */
-	SpiChnConfigure(SPICHAN, SPI_CONFIG_SLVEN | SPI_CONFIG_SSEN | SPI_CONFIG_CKE_REV |
+	/* Slave mode, CKE, 8 bits, enhanced buffer, interrupt on rx */
+	SpiChnConfigure(SPICHAN, SPI_CONFIG_SLVEN | SPI_CONFIG_CKE_REV |
 	        SPI_CONFIG_ENHBUF | SPI_CONFIG_RBF_NOT_EMPTY);
 
 	/* start SPI */

@@ -29,7 +29,6 @@ Usage: loadrt hal_picnc_bb
 pin in float	#.velocity-cmd[4] = 0.0 "Desired motor velocity";
 pin in float	#.position-cmd[4] = 0.0 "Desired motor position";
 pin in bit	#.enable[4]	  = 0;
-pin in bit	pin.#.out[4]	  = 0	"Digital outputs";
 
 pin out float	#.position-fb[4]  = 0.0	"Feedback position ";
 pin out s32	#.counts[4]	  = 0	"Feedback position in counts";
@@ -89,7 +88,7 @@ author "GP Orcullo";
 #include <errno.h>
 #include <stdarg.h>
 
-#include "hal_picnc.h"
+#include "hal_picnc_mini.h"
 
 #define STEPBIT		17		/* bit location in DDS accum */
 #define STEP_MASK	(1<<STEPBIT)
@@ -194,11 +193,11 @@ FUNCTION(read_spi)
 	}
 
 	/* update input status */
-	pin_in(0) = (get_inputs() && 0b000000100000) ? true : false;
-	pin_in(0) = (get_inputs() && 0b000001000000) ? true : false;
-	pin_in(0) = (get_inputs() && 0b000010000000) ? true : false;
-	pin_in(0) = (get_inputs() && 0b000100000000) ? true : false;
-	pin_in(0) = (get_inputs() && 0b001000000000) ? true : false;
+	pin_in(0) = (get_inputs() & 0b000000100000) ? true : false;
+	pin_in(1) = (get_inputs() & 0b000001000000) ? true : false;
+	pin_in(2) = (get_inputs() & 0b000010000000) ? true : false;
+	pin_in(3) = (get_inputs() & 0b000100000000) ? true : false;
+	pin_in(4) = (get_inputs() & 0b001000000000) ? true : false;
 }
 
 FUNCTION(write_spi)
@@ -481,7 +480,7 @@ void setup_gpio()
 	BCM2835_GPFSEL1 = x;
 
 	/* clear request, active low */
-	BCM2835_GPSET0 = (1l << 15);
+	BCM2835_GPSET0 = (1l << 14);
 
 	/* reset GPIO 7, tri-state, hi-Z */
 	x = BCM2835_GPFSEL0;
@@ -522,12 +521,7 @@ void restore_gpio()
 	BCM2835_GPFSEL1 = x;
 
 	/* change all used pins back to inputs */
-#if 0
-	/* request GPIO 15 */
-	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (5*3));
-	BCM2835_GPFSEL1 = x;
-#endif
+
 	/* reset GPIO 7 */
 	x = BCM2835_GPFSEL0;
 	x &= ~(0b111 << (7*3));

@@ -41,7 +41,8 @@
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define CORE_DIVIDER			(BASEFREQ/CLOCK_CONF_SECOND)
 
-#define SPIBUFSIZE			64		/* BCM2835 SPI buffer size */
+#define SPIBUFSIZE			32		/* BCM2835 SPI buffer size, reduced by half 
+							   since SPI speed is slower */
 #define BUFSIZE				(SPIBUFSIZE/4)
 
 #define ENABLE_WATCHDOG
@@ -86,16 +87,7 @@ void init_io_ports()
 	REQ_CNPU_Enable();
 
 	/* configure step and dir pins as outputs */
-	STEP_A_TRIS = 0;
-	STEP_X_TRIS = 0;
-	STEP_Y_TRIS = 0;
-	STEP_Z_TRIS = 0;
-
-	DIR_A_TRIS = 0;
-	DIR_X_TRIS = 0;
-	DIR_Y_TRIS = 0;
-	DIR_Z_TRIS = 0;
-
+	configure_stepdir();
 }
 
 void init_spi()
@@ -103,8 +95,8 @@ void init_spi()
 	/* configure SPI */
 	SpiChnEnable(SPICHAN, 0);
 
-	/* Slave mode, enable SS input, CKE, 8 bits, enhanced buffer, interrupt on rx */
-	SpiChnConfigure(SPICHAN, SPI_CONFIG_SLVEN | SPI_CONFIG_SSEN | SPI_CONFIG_CKE_REV |
+	/* Slave mode, CKE, 8 bits, enhanced buffer, interrupt on rx */
+	SpiChnConfigure(SPICHAN, SPI_CONFIG_SLVEN | SPI_CONFIG_CKE_REV |
 	        SPI_CONFIG_ENHBUF | SPI_CONFIG_RBF_NOT_EMPTY);
 
 	/* start SPI */
@@ -183,13 +175,12 @@ int main(void)
 	while (1) {
 
 		/* process incoming data request,
-		   transfer valid data to txBuf,
-		   request line active low	  */
+		   transfer valid data to txBuf */
 		if (!REQ_IO_IN) {
-			i = stepgen_get_position((void *)&txBuf[1]);
+			stepgen_get_position((void *)&txBuf[1]);
 			
 			/* read inputs */
-			txBuf[1+i] = PORTB;
+			txBuf[5] = PORTB & 0x3E0;
 
 			/* sanity check */
 			txBuf[0] = rxBuf[0];

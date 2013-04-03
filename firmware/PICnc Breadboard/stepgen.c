@@ -55,13 +55,11 @@ static volatile stepgen_input_struct stepgen_input = { {0} };
 
 static int do_step_hi[MAXGEN] = {1, 1, 1, 1};
 
-int stepgen_get_position(void *buf)
+void stepgen_get_position(void *buf)
 {
 	disable_int();
 	memcpy(buf, (const void *)position, sizeof(position));
 	enable_int();
-	/* return number of words */
-	return (3+sizeof(position)) >> 2;
 }
 
 void stepgen_update_input(const void *buf)
@@ -83,7 +81,6 @@ void stepgen_reset(void)
 		oldvel[i] = 0;
 
 		stepgen_input.velocity[i] = 0;
-
 		do_step_hi[i] = 1;
 	}
 

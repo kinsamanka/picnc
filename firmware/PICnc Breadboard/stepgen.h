@@ -39,7 +39,7 @@ typedef struct {
 
 void stepgen(void);
 void stepgen_reset(void);
-int stepgen_get_position(void *buf);
+void stepgen_get_position(void *buf);
 void stepgen_update_input(const void *buf);
 
 #endif				/* __STEPGEN_H__ */

@@ -37,14 +37,11 @@
 #define RDY_IO_0		(LATBCLR = _LATB_LATB0_MASK)
 #define RDY_IO_1		(LATBSET = _LATB_LATB0_MASK)
 
-#define STEP_A_TRIS		(TRISBbits.TRISB12)
-#define DIR_A_TRIS		(TRISBbits.TRISB14)
-#define STEP_X_TRIS		(TRISBbits.TRISB2)
-#define DIR_X_TRIS		(TRISBbits.TRISB3)
-#define STEP_Y_TRIS		(TRISBbits.TRISB4)
-#define DIR_Y_TRIS		(TRISAbits.TRISA4)
-#define STEP_Z_TRIS		(TRISAbits.TRISA2)
-#define DIR_Z_TRIS		(TRISAbits.TRISA3)
+#define configure_stepdir()							\
+	do {									\
+		TRISACLR = BIT_4 | BIT_3 | BIT_2;				\
+		TRISBCLR = BIT_14 | BIT_12 | BIT_4 | BIT_3 | BIT_2;		\
+	} while (0)
 
 /* Note the outputs are inverted */
 
@@ -53,19 +50,21 @@
 #define DIR_HI_A		(LATBCLR = _LATB_LATB14_MASK)
 #define DIR_LO_A		(LATBSET = _LATB_LATB14_MASK)
 
-#define STEPHI_X		(LATBCLR = _LATB_LATB2_MASK)
-#define STEPLO_X		(LATBSET = _LATB_LATB2_MASK)
-#define DIR_HI_X		(LATBCLR = _LATB_LATB3_MASK)
-#define DIR_LO_X		(LATBSET = _LATB_LATB3_MASK)
+#define STEPHI_X		(LATACLR = _LATA_LATA3_MASK)
+#define STEPLO_X		(LATASET = _LATA_LATA3_MASK)
+#define DIR_HI_X		(LATACLR = _LATA_LATA2_MASK)
+#define DIR_LO_X		(LATASET = _LATA_LATA2_MASK)
 
-#define STEPHI_Y		(LATBCLR = _LATB_LATB4_MASK)
-#define STEPLO_Y		(LATBSET = _LATB_LATB4_MASK)
-#define DIR_HI_Y		(LATACLR = _LATA_LATA4_MASK)
-#define DIR_LO_Y		(LATASET = _LATA_LATA4_MASK)
+#define STEPHI_Y		(LATBCLR = _LATB_LATB2_MASK)
+#define STEPLO_Y		(LATBSET = _LATB_LATB2_MASK)
+#define DIR_HI_Y		(LATBCLR = _LATB_LATB3_MASK)
+#define DIR_LO_Y		(LATBSET = _LATB_LATB3_MASK)
 
-#define STEPHI_Z		(LATACLR = _LATA_LATA2_MASK)
-#define STEPLO_Z		(LATASET = _LATA_LATA2_MASK)
-#define DIR_HI_Z		(LATACLR = _LATA_LATA3_MASK)
-#define DIR_LO_Z		(LATASET = _LATA_LATA3_MASK)
+#define STEPHI_Z		(LATACLR = _LATA_LATA4_MASK)
+#define STEPLO_Z		(LATASET = _LATA_LATA4_MASK)
+#define DIR_HI_Z		(LATBCLR = _LATB_LATB4_MASK)
+#define DIR_LO_Z		(LATBSET = _LATB_LATB4_MASK)
+
+
 
 #endif /* __HARDWARE_H__ */

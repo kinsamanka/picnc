@@ -87,7 +87,7 @@ author "GP Orcullo";
 #include <errno.h>
 #include <stdarg.h>
 
-#include "hal_picnc.h"
+#include "hal_picnc_mini.h"
 
 #define STEPBIT		17		/* bit location in DDS accum */
 #define STEP_MASK	(1<<STEPBIT)

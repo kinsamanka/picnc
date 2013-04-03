@@ -41,7 +41,8 @@
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define CORE_DIVIDER			(BASEFREQ/CLOCK_CONF_SECOND)
 
-#define SPIBUFSIZE			64		/* BCM2835 SPI buffer size */
+#define SPIBUFSIZE			32		/* BCM2835 SPI buffer size, reduced by half 
+							   since SPI speed is slower */
 #define BUFSIZE				(SPIBUFSIZE/4)
 
 #define ENABLE_WATCHDOG

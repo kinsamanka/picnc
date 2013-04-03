@@ -471,7 +471,7 @@ void setup_gpio()
 	BCM2835_GPFSEL1 = x;
 
 	/* clear request, active low */
-	BCM2835_GPSET0 = (1l << 15);
+	BCM2835_GPSET0 = (1l << 14);
 
 	/* reset GPIO 18, tri-state, hi-Z */
 	x = BCM2835_GPFSEL1;
@@ -512,12 +512,7 @@ void restore_gpio()
 	BCM2835_GPFSEL1 = x;
 
 	/* change all used pins back to inputs */
-#if 0
-	/* request GPIO 15 */
-	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (5*3));
-	BCM2835_GPFSEL1 = x;
-#endif
+
 	/* reset GPIO 18 */
 	x = BCM2835_GPFSEL1;
 	x &= ~(0b111 << (8*3));

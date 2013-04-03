@@ -1,5 +1,5 @@
 
-USE_BOOTLOADER	= true
+USE_BOOTLOADER	= false
 
 H		= .
 M		= .

@@ -35,6 +35,8 @@
 #pragma config CP = OFF			/* Code Protect Disabled */
 #pragma config FWDTEN = OFF		/* Watchdog Timer Disable */
 #pragma config WDTPS = PS4096		/* Watchdog Timer Postscaler */
+#pragma config FVBUSONIO = OFF		/* VBUSON pin is GPIO */
+#pragma config FUSBIDIO = OFF		/* USBID pin is GPIO */
 #endif
 
 #define BASEFREQ			160000
@@ -51,6 +53,9 @@ static volatile int spi_data_ready = 0;
 
 void init_io_ports()
 {
+	U1PWRCbits.USUSPEND = 1;
+	U1PWRCbits.USBPWR = 0;
+
 	/* disable all analog pins */
 	AD1PCFG = 0xFFFF;
 

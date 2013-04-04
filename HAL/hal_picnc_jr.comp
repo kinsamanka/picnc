@@ -46,7 +46,7 @@ param rw bit	#.mode[4]	  = 0	"Velocity/Position Mode (true = Position Mode)";
 param rw float	pin.#.pwmscale[2] = 1.0	;
 param rw float	pin.#.adcscale[2] = 1.0	;
 param rw bit	pin.#.pwmenable[2] = 0	;
-param rw float	pwmfrequency	  = 1.0 ;
+param rw float	pwmfreq		  = 1.0 ;
 
 variable long old_dtns		  = 0;	 /* update_freq funct period in nsec */
 variable double dt		  = 0;	 /* update_freq period in seconds */

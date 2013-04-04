@@ -29,15 +29,24 @@ Usage: loadrt hal_picnc_jr
 pin in float	#.velocity-cmd[4] = 0.0 "Desired motor velocity";
 pin in float	#.position-cmd[4] = 0.0 "Desired motor position";
 pin in bit	#.enable[4]	  = 0;
+pin in bit	pin.#.out[4]	  = 0	"Digital output";
+pin in float	pin.#.pwm[2]	  = 0.0 "PWM output";
 
-pin out float	#.position-fb[4]  = 0.0	"Feedback position ";
+pin out float	#.position-fb[4]  = 0.0	"Feedback position";
 pin out s32	#.counts[4]	  = 0	"Feedback position in counts";
 pin out bit	ready		  = 0	"Module state";
 
-param rw float	#.scale[4]	  = 1.0	"Steps per position unit.";
+pin out float	pin.#.adc[2]	  = 0.0	"Analog input";
+pin out bit	pin.#.in[4]	  = 0	"Digital input";
+
+param rw float	#.scale[4]	  = 1.0	"Steps per position unit";
 param rw float	#.maxvel[4]	  = 1.0	"Maximum velocity";
 param rw float	#.maxaccel[4]	  = 1.0	"Maximum acceleration";
 param rw bit	#.mode[4]	  = 0	"Velocity/Position Mode (true = Position Mode)";
+param rw float	pin.#.pwmscale[2] = 1.0	;
+param rw float	pin.#.adcscale[2] = 1.0	;
+param rw bit	pin.#.pwmenable[2] = 0	;
+param rw float	pwmfrequency	  = 1.0 ;
 
 variable long old_dtns		  = 0;	 /* update_freq funct period in nsec */
 variable double dt		  = 0;	 /* update_freq period in seconds */
@@ -189,6 +198,13 @@ FUNCTION(read_spi)
 		_counts(i) = accum[i] >> STEPBIT;
 		_position_fb(i) = (float)(accum[i]) * scale_inv[i];
 	}
+	
+	/* update inputs */
+	pin_in(0) = (BCM2835_GPLEV0 & (1l << 8) ? true : false);
+	pin_in(1) = (BCM2835_GPLEV0 & (1l << 23) ? true : false);
+	pin_in(2) = (BCM2835_GPLEV0 & (1l << 24) ? true : false);
+	pin_in(3) = (BCM2835_GPLEV0 & (1l << 25) ? true : false);
+	
 }
 
 FUNCTION(write_spi)
@@ -477,6 +493,17 @@ void setup_gpio()
 	x = BCM2835_GPFSEL1;
 	x &= ~(0b111 << (8*3));
 	BCM2835_GPFSEL1 = x;
+	
+	/* configure inputs */
+	/* GPIO 8 */
+	x = BCM2835_GPFSEL0;
+	x &= ~(0b111 << (8*3));
+	BCM2835_GPFSEL0 = x;
+	
+	/* GPIO 23,24,25 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (5*3) | 0b111 << (4*3) | 0b111 << (3*3));
+	BCM2835_GPFSEL2 = x;
 
 	/* change SPI pins */
 	x = BCM2835_GPFSEL0;

@@ -26,8 +26,10 @@
 #include "stepgen.h"
 
 #define STEPBIT		17
-#define STEP_MASK	(1L<<(STEPBIT-1))
+#define STEP_MASK	(1L<<STEPBIT)
 #define DIR_MASK	(1L<<31)
+
+#define STEPWIDTH	2
 
 /*
   Timing diagram:
@@ -49,7 +51,9 @@ static void dir_lo(int);
 static volatile int32_t position[MAXGEN] = { 0 };
 
 static int32_t oldpos[MAXGEN] = { 0 },
-        oldvel[MAXGEN] = { 0 };
+		oldvel[MAXGEN] = { 0 };
+
+static int dirchange[MAXGEN] ={ 0 };
 
 static volatile stepgen_input_struct stepgen_input = { {0} };
 
@@ -92,12 +96,15 @@ void stepgen_reset(void)
 	}
 }
 
+static int stepwdth[MAXGEN] = { 0 };
+
 void stepgen(void)
 {
 	uint32_t stepready;
 	int i;
-
+	
 	for (i = 0; i < MAXGEN; i++) {
+
 		/* check if a step pulse can be generated */
 		stepready = (position[i] ^ oldpos[i]) & STEP_MASK;
 
@@ -105,32 +112,39 @@ void stepgen(void)
 		if (stepready) {
 
 			oldpos[i] = position[i];
+			stepwdth[i] = STEPWIDTH;
 
-			if (do_step_hi[i]) {
-				do_step_hi[i] = 0;
-				step_hi(i);
-			} else {
+			do_step_hi[i] = 0;
+			step_hi(i);
+		}
+		
+		if (stepwdth[i]) {
+			stepwdth[i]--;
+			if (stepwdth[i] == 0) {
 				do_step_hi[i] = 1;
 				step_lo(i);
 			}
 		}
-
-		/* update position counter */
-		position[i] += stepgen_input.velocity[i];
-
-		/* generate direction pulse */
-		if (stepready && do_step_hi[i]) {
-			/* check for direction change */
+				
+		/* check for direction change */
+		if (!dirchange[i]) {
 			if ((stepgen_input.velocity[i] ^ oldvel[i]) & DIR_MASK) {
-
+				dirchange[i] = 1;
 				oldvel[i] = stepgen_input.velocity[i];
-
-				if (stepgen_input.velocity[i] > 0)
-					dir_lo(i);
-				if (stepgen_input.velocity[i] < 0)
-					dir_hi(i);
 			}
 		}
+
+		/* generate direction pulse after step hi-lo transition */
+		if (do_step_hi[i] && dirchange[i]) {
+			dirchange[i] = 0;
+			if (oldvel[i] >= 0)
+				dir_lo(i);
+			if (oldvel[i] < 0)
+				dir_hi(i);
+		}
+		
+		/* update position counter */
+		position[i] += stepgen_input.velocity[i];
 	}
 }
 

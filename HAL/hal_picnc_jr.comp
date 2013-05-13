@@ -215,10 +215,9 @@ FUNCTION(write_spi)
 FUNCTION(stepgen)
 {
 	int i;
-	double max_vel,
-
-	       desired_vel, max_accl, vel_cmd, dv, new_vel;
-	double dp, pos_cmd, curr_pos, match_accl, match_time, avg_v, est_out, est_cmd, est_err;
+	double max_vel, desired_vel, max_accl, vel_cmd, dv, new_vel;
+	double dp, pos_cmd, curr_pos, match_accl, match_time, avg_v, 
+		est_out, est_cmd, est_err;
 
 	for (i = 0; i < NUMAXES; i++) {
 

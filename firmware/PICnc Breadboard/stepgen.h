@@ -20,7 +20,7 @@
 #ifndef __STEPGEN_H__
 #define __STEPGEN_H__
 
-#define MAXGEN	4
+#define MAXGEN	3
 
 #define disable_int()								\
 	do {									\

@@ -25,63 +25,81 @@
 
 #define SPICHAN			2
 
-/* map SPI pins */
+/*    PORT USAGE
+ *
+ *	Pin	Port	Dir	Signal
+ *
+ *	2	RA0	OUT	Status LED
+ *	3	RA1	OUT	MISO
+ *	9	RA2	OUT	DIR_X
+ *	10	RA3	OUT	STEP_X
+ *	12	RA4	OUT	STEP_Z
+ *	4	RB0	OUT	DATA READY
+ *	6	RB2	OUT	STEP_Y
+ *	7	RB3	OUT	DIR_Y
+ *	11	RB4	OUT	DIR_Z
+ *	21	RB10	OUT	PWM
+ *	22	RB11	OUT	OUTPUT 0
+ *	23	RB12	OUT	OUTPUT 1
+ *	25	RB14	OUT	OUTPUT 2
+ *
+ *	5	RB1	IN	DATA REQUEST
+ *	14	RB5	IN	INPUT 0
+ *	15	RB6	IN	INPUT 1
+ *	16	RB7	IN	INPUT 2
+ *	17	RB8	IN	INPUT 3
+ *	18	RB9	IN	INPUT 4
+ *	24	RB13	IN	MOSI
+ *	26	RB15	IN	SCLK
+ *
+ */
 
-#define configure_PPS()								\
-	do {									\
-		PPSInput(3, SDI2, RPB13);					\
-		PPSOutput(2, RPA1, SDO2);					\
-	} while (0)
-
-#define configure_inputs()							\
-	do {									\
-		TRISBSET = BIT_9 | BIT_8 | BIT_7 | BIT_6 | BIT_5 ;		\
-	} while (0)
-
-#define LED0_TRIS		(TRISAbits.TRISA0)
 #define LED0_IO			(LATAbits.LATA0)
-
-#define REQ_TRIS		(TRISBbits.TRISB1)
+#define RDY_IO			(LATBbits.LATB0)
 #define REQ_IO_IN		(PORTBbits.RB1)
 
+/* enable pull-ups on REQ_IO_IN line */
 #define REQ_CNPU_Enable()							\
 	do {									\
 		ConfigCNBPullups(CNB1_PULLUP_ENABLE);				\
 	} while (0)
 
-#define RDY_TRIS		(TRISBbits.TRISB0)
-#define RDY_IO			(LATBbits.LATB0)
-#define RDY_IO_0		(LATBCLR = _LATB_LATB0_MASK)
-#define RDY_IO_1		(LATBSET = _LATB_LATB0_MASK)
-
-#define configure_stepdir()							\
+/* map SPI and PWM pins */
+#define configure_PPS()								\
 	do {									\
-		TRISACLR = BIT_4 | BIT_3 | BIT_2;				\
-		TRISBCLR = BIT_14 | BIT_12 | BIT_4 | BIT_3 | BIT_2;		\
+		PPSInput(3, SDI2, RPB13);					\
+		PPSOutput(2, RPA1, SDO2);					\
+		PPSOutput(4, RPB10, OC3);					\
+	} while (0)
+
+#define configure_inputs()							\
+	do {									\
+		TRISBSET = BIT_15 | BIT_13 | BIT_9 | BIT_8 |			\
+			   BIT_7  | BIT_6  | BIT_5 | BIT_1 ;			\
+	} while (0)
+
+#define configure_outputs()							\
+	do {									\
+		TRISBCLR = BIT_14 | BIT_12 | BIT_11 | BIT_10 |			\
+			   BIT_4  | BIT_3  | BIT_2  | BIT_0 ;			\
+		TRISACLR = BIT_4  | BIT_3  | BIT_2  | BIT_1  | BIT_0;		\
 	} while (0)
 
 /* Note the outputs are inverted */
 
-#define STEPHI_A		(LATBCLR = _LATB_LATB12_MASK)
-#define STEPLO_A		(LATBSET = _LATB_LATB12_MASK)
-#define DIR_HI_A		(LATBCLR = _LATB_LATB14_MASK)
-#define DIR_LO_A		(LATBSET = _LATB_LATB14_MASK)
+#define STEPHI_X		(LATACLR = BIT_3)
+#define STEPLO_X		(LATASET = BIT_3)
+#define DIR_HI_X		(LATACLR = BIT_2)
+#define DIR_LO_X		(LATASET = BIT_2)
 
-#define STEPHI_X		(LATACLR = _LATA_LATA3_MASK)
-#define STEPLO_X		(LATASET = _LATA_LATA3_MASK)
-#define DIR_HI_X		(LATACLR = _LATA_LATA2_MASK)
-#define DIR_LO_X		(LATASET = _LATA_LATA2_MASK)
+#define STEPHI_Y		(LATBCLR = BIT_2)
+#define STEPLO_Y		(LATBSET = BIT_2)
+#define DIR_HI_Y		(LATBCLR = BIT_3)
+#define DIR_LO_Y		(LATBSET = BIT_3)
 
-#define STEPHI_Y		(LATBCLR = _LATB_LATB2_MASK)
-#define STEPLO_Y		(LATBSET = _LATB_LATB2_MASK)
-#define DIR_HI_Y		(LATBCLR = _LATB_LATB3_MASK)
-#define DIR_LO_Y		(LATBSET = _LATB_LATB3_MASK)
-
-#define STEPHI_Z		(LATACLR = _LATA_LATA4_MASK)
-#define STEPLO_Z		(LATASET = _LATA_LATA4_MASK)
-#define DIR_HI_Z		(LATBCLR = _LATB_LATB4_MASK)
-#define DIR_LO_Z		(LATBSET = _LATB_LATB4_MASK)
-
-
+#define STEPHI_Z		(LATACLR = BIT_4)
+#define STEPLO_Z		(LATASET = BIT_4)
+#define DIR_HI_Z		(LATBCLR = BIT_4)
+#define DIR_LO_Z		(LATBSET = BIT_4)
 
 #endif /* __HARDWARE_H__ */

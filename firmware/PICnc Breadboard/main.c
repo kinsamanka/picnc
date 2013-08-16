@@ -69,23 +69,15 @@ void init_io_ports()
 	ANSELA = 0x0;
 	ANSELB = 0x0;
 
-	/* setup inputs */
+	/* setup I/O */
 	configure_inputs();
+	configure_outputs();
 
-	/* LED */
-	LED0_TRIS = 0;
-	LED0_IO = 0;
-
-	/* data ready, active low */
-	RDY_TRIS = 0;
-	RDY_IO = 1;
-
-	/* data request, active low, pull-up enabled */
-	REQ_TRIS = 1;
+	/* enable pull-ups on inputs */
 	REQ_CNPU_Enable();
-
-	/* configure step and dir pins as outputs */
-	configure_stepdir();
+	
+	/* data ready, active low */
+	RDY_IO = 1;
 }
 
 void init_spi()
@@ -187,9 +179,9 @@ int main(void)
 			/* reset spi_timeout */
 			spi_timeout = 0;
 
-			RDY_IO_0;	/* the ready line is active low */
+			RDY_IO = 0;	/* the ready line is active low */
 		} else {
-			RDY_IO_1;
+			RDY_IO = 1;
 		}
 
 		/* process received data */

@@ -77,7 +77,7 @@ void init_io_ports()
 	REQ_CNPU_Enable();
 	
 	/* data ready, active low */
-	RDY_IO = 1;
+	RDY_IO_HI;
 }
 
 void init_spi()
@@ -128,7 +128,7 @@ void init_dma()
 
 int main(void)
 {
-	int spi_timeout, i;
+	int spi_timeout;
 	static uint32_t x = 0;
 
 	/* Disable JTAG port so we get our I/O pins back */
@@ -179,9 +179,9 @@ int main(void)
 			/* reset spi_timeout */
 			spi_timeout = 0;
 
-			RDY_IO = 0;	/* the ready line is active low */
+			RDY_IO_LO;	/* the ready line is active low */
 		} else {
-			RDY_IO = 1;
+			RDY_IO_HI;
 		}
 
 		/* process received data */
@@ -208,7 +208,7 @@ int main(void)
 		/* blink onboard led */
 		if (x++ == 250000L) {
 			x = 0;
-			LED0_IO ^= 1;
+			LED0_BLINK;
 		}
 #if defined(ENABLE_WATCHDOG)
 		/* keep alive */

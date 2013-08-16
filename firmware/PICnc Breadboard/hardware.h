@@ -54,9 +54,10 @@
  *
  */
 
-#define LED0_IO			(LATAbits.LATA0)
-#define RDY_IO			(LATBbits.LATB0)
+#define LED0_BLINK		(LATAINV = BIT_0)
 #define REQ_IO_IN		(PORTBbits.RB1)
+#define RDY_IO_LO		(LATBCLR = BIT_0)
+#define RDY_IO_HI		(LATBSET = BIT_0)
 
 /* enable pull-ups on REQ_IO_IN line */
 #define REQ_CNPU_Enable()							\

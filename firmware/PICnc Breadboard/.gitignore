@@ -3,4 +3,5 @@
 *.dis
 *.elf
 *.map
+*.orig
 *.hex

@@ -39,8 +39,8 @@
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define CORE_DIVIDER			(BASEFREQ/CLOCK_CONF_SECOND)
 
-#define SPIBUFSIZE			32		/* BCM2835 SPI buffer size, reduced by half 
-							   since SPI speed is slower */
+#define SPIBUFSIZE			32	/* BCM2835 SPI buffer size for 
+						   PIC32MX150F128B */
 #define BUFSIZE				(SPIBUFSIZE/4)
 
 #define ENABLE_WATCHDOG
@@ -48,8 +48,7 @@
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready = 0;
 
-void map_peripherals()
-{
+void map_peripherals() {
 	/* unlock PPS sequence */
 	SYSKEY = 0x0;			/* make sure it is locked */
 	SYSKEY = 0xAA996655;		/* Key 1 */
@@ -63,8 +62,7 @@ void map_peripherals()
 	SYSKEY = 0x0;			/* lock register access */
 }
 
-void init_io_ports()
-{
+void init_io_ports() {
 	/* disable all analog pins */
 	ANSELA = 0x0;
 	ANSELB = 0x0;
@@ -75,13 +73,12 @@ void init_io_ports()
 
 	/* enable pull-ups on inputs */
 	REQ_CNPU_Enable();
-	
+
 	/* data ready, active low */
 	RDY_IO_HI;
 }
 
-void init_spi()
-{
+void init_spi() {
 	/* configure SPI */
 	SpiChnEnable(SPICHAN, 0);
 
@@ -96,8 +93,7 @@ void init_spi()
 	SPI2BUF = 0x88;
 }
 
-void init_dma()
-{
+void init_dma() {
 	/* open and configure the DMA channels
 	     DMA 0 is for SPI -> buffer, this is the master channel, auto enabled
 	     DMA 1 is for buffer -> SPI, this channel is chained to DMA 0 */
@@ -126,14 +122,13 @@ void init_dma()
 	DmaChnEnable(0);
 }
 
-void reset_board(){
+void reset_board() {
 	stepgen_reset();
 	update_outputs(0);
 	update_pwm_duty(~0);		/* output is inverted */
 }
 
-int main(void)
-{
+int main(void) {
 	int spi_timeout;
 	static uint32_t x = 0;
 
@@ -170,12 +165,11 @@ int main(void)
 
 	/* main loop */
 	while (1) {
-
 		/* process incoming data request,
 		   transfer valid data to txBuf */
 		if (!REQ_IO_IN) {
 			stepgen_get_position((void *)&txBuf[1]);
-			
+
 			/* read inputs */
 			txBuf[5] = PORTB & 0x3E0;
 
@@ -186,7 +180,7 @@ int main(void)
 			/* reset spi_timeout */
 			spi_timeout = 0;
 
-			RDY_IO_LO;	/* the ready line is active low */
+			RDY_IO_LO;		/* the ready line is active low */
 		} else {
 			RDY_IO_HI;
 		}
@@ -231,8 +225,7 @@ int main(void)
 	return 0;
 }
 
-void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void)
-{
+void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void) {
 	/* update the period */
 	UpdateCoreTimer(CORE_TICK_RATE);
 
@@ -243,8 +236,7 @@ void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void)
 	mCTClearIntFlag();
 }
 
-void __ISR(_DMA0_VECTOR, ipl5) DmaHandler0(void)
-{
+void __ISR(_DMA0_VECTOR, ipl5) DmaHandler0(void) {
 	int	evFlags;
 
 	/* acknowledge interrupt */

@@ -59,7 +59,7 @@ void map_peripherals()
 	configure_PPS();
 
 	/* lock PPS sequence */
-	CFGCONbits.IOLOCK=1;		/* now it is unlocked */
+	CFGCONbits.IOLOCK=1;		/* now it is locked */
 	SYSKEY = 0x0;			/* lock register access */
 }
 
@@ -126,6 +126,12 @@ void init_dma()
 	DmaChnEnable(0);
 }
 
+void reset_board(){
+	stepgen_reset();
+	update_outputs(0);
+	update_pwm_duty(~0);		/* output is inverted */
+}
+
 int main(void)
 {
 	int spi_timeout;
@@ -150,10 +156,11 @@ int main(void)
 
 	map_peripherals();
 	init_io_ports();
+	configure_pwm();
 	init_spi();
 	init_dma();
 
-	stepgen_reset();
+	reset_board();
 	spi_data_ready = 0;
 	spi_timeout = 0;
 
@@ -191,10 +198,16 @@ int main(void)
 			/* the first byte received is a command byte */
 			switch (rxBuf[0]) {
 			case 0x5453523E:	/* >RST */
-				stepgen_reset();
+				reset_board();
 				break;
 			case 0x444D433E:	/* >CMD */
 				stepgen_update_input((const void *)&rxBuf[1]);
+				update_outputs(rxBuf[1+MAXGEN]);
+				update_pwm_duty(rxBuf[2+MAXGEN]);
+				break;
+			case 0x4746433E:	/* >CFG */
+				stepgen_update_stepwidth(rxBuf[1]);
+				update_pwm_period(rxBuf[2]);
 				break;
 			}
 		}
@@ -202,7 +215,7 @@ int main(void)
 		/* shutdown stepgen if no activity */
 		if (spi_timeout++ > 20000L) {
 			spi_timeout = 20000L;
-			stepgen_reset();
+			reset_board();
 		}
 
 		/* blink onboard led */

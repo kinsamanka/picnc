@@ -86,7 +86,37 @@
 		TRISACLR = BIT_4  | BIT_3  | BIT_2  | BIT_1  | BIT_0;		\
 	} while (0)
 
+/* PWM is using OC3 and Timer2, note output pin is inverted */
+#define configure_pwm()								\
+	do {									\
+		OC3CON = 0x0000;	/* disable OC3 */			\
+		OC3R = ~0;		/* set output high */			\
+		OC3RS = ~0;							\
+		OC3CON = 0x0006;	/* PWM mode, fault pin disabled */	\
+		T2CONSET = 0x0008;	/* Timer2 32 bit mode */		\
+		PR2 = 0x9C3F;		/* set period, 1kHz */			\
+		T2CONSET = 0x8000;	/* start timer */			\
+		OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */		\
+	} while (0)
+
+#define update_pwm_period(val)								\
+	do {									\
+		PR2 = (val);							\
+	} while (0)
+
+#define update_pwm_duty(val)								\
+	do {									\
+		OC3RS = (val);							\
+	} while (0)
+
 /* Note the outputs are inverted */
+
+#define PORTB_OUT_MASK	(BIT_14 | BIT_12 | BIT_11)
+#define update_outputs(val)							\
+	do {									\
+		LATBCLR =  PORTB_OUT_MASK &  (val);				\
+		LATBSET =  PORTB_OUT_MASK & ~(val);				\
+	} while (0)
 
 #define STEPHI_X		(LATACLR = BIT_3)
 #define STEPLO_X		(LATASET = BIT_3)

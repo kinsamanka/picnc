@@ -39,5 +39,6 @@ void stepgen(void);
 void stepgen_reset(void);
 void stepgen_get_position(void *buf);
 void stepgen_update_input(const void *buf);
+void stepgen_update_stepwidth(int width);
 
 #endif				/* __STEPGEN_H__ */

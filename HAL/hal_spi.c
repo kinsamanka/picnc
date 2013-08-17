@@ -25,6 +25,7 @@
 #include <math.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 #include "hal_spi.h"
 
@@ -300,7 +301,6 @@ static void write_spi(void *arg, long period) {
 static void update(void *arg, long period) {
 	int i;
 	spi_data_t *spi = (spi_data_t *)arg;
-	unsigned long j;
 	float duty;
 	double max_accl, vel_cmd, dv, new_vel,
 	       dp, pos_cmd, curr_pos, match_accl, match_time, avg_v,

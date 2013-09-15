@@ -54,8 +54,8 @@ typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
 	            *position_fb[NUMAXES],
 	            *pwm_duty;
-	hal_bit_t   *pin_out[5],
-	            *pin_in[5],
+	hal_bit_t   *pin_out[1],
+	            *pin_in[4],
 	            *ready;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],
@@ -287,12 +287,10 @@ static void read_spi(void *arg, long period) {
 	}
 
 	/* update input status */
-	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
-	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
-	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
-	*(spi->pin_in[3]) = (get_inputs() & 0b000100000000) ? 1 : 0;
-	*(spi->pin_in[4]) = (get_inputs() & 0b001000000000) ? 1 : 0;
-}
+	*(spi->pin_in[0]) = (BCM2835_GPLEV0 & (1l << 23) ? 1 : 0);
+	*(spi->pin_in[1]) = (BCM2835_GPLEV0 & (1l <<  8) ? 1 : 0);
+	*(spi->pin_in[2]) = (BCM2835_GPLEV0 & (1l << 25) ? 1 : 0);
+	*(spi->pin_in[3]) = (BCM2835_GPLEV0 & (1l << 24) ? 1 : 0);
 
 static void write_spi(void *arg, long period) {
 	transfer_data();
@@ -397,11 +395,6 @@ static void update(void *arg, long period) {
 		update_velocity(i, (new_vel * VELSCALE));
 	}
 
-	/* update rpi output, active low */
-	BCM2835_GPCLR0 = (*(spi->pin_out[3]) ? 1l : 0) << 23 ;	/* GPIO23 */
-	BCM2835_GPSET0 = (*(spi->pin_out[3]) ? 0 : 1l) << 23 ;
-	BCM2835_GPCLR0 = (*(spi->pin_out[4]) ? 1l : 0) << 24 ;	/* GPIO24 */
-	BCM2835_GPSET0 = (*(spi->pin_out[4]) ? 0 : 1l) << 24 ;
 
 	/* update pic32 output */
 	txBuf[1+NUMAXES] = (*(spi->pin_out[0]) ? 1l : 0) << 11 |
@@ -450,26 +443,26 @@ void transfer_data() {
 void reset_board() {
 	u32 x,i;
 
-	/* GPIO 7 is configured as a tri-state output pin */
+	/* GPIO 18 is configured as a tri-state output pin */
 
-	/* set as output GPIO 7 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	x |= (0b001 << (7*3));
-	BCM2835_GPFSEL0 = x;
+	/* set as output GPIO 18 */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (8*3));
+	x |= (0b001 << (8*3));
+	BCM2835_GPFSEL1 = x;
 
 	/* board reset is active low */
 	for (i=0; i<0x10000; i++)
-		BCM2835_GPCLR0 = (1l << 7);
+		BCM2835_GPCLR1 = (1l << 8);
 
 	/* wait until the board is ready */
 	for (i=0; i<0x300000; i++)
-		BCM2835_GPSET0 = (1l << 7);
+		BCM2835_GPSET1 = (1l << 8);
 
-	/* reset GPIO 7 back to input */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	BCM2835_GPFSEL0 = x;
+	/* reset GPIO 18 back to input */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (8*3));
+	BCM2835_GPFSEL1 = x;
 }
 
 int map_gpio() {
@@ -515,6 +508,23 @@ int map_gpio() {
 	return 0;
 }
 
+/*    GPIO USAGE
+ *
+ *	GPIO	Port	Dir	Signal		Note
+ *
+ *	15	RB0	IN	DATA READY	active low
+ *	9	RB1	IN	MISO
+ *	23	-	IN	E-STOP
+ *	8	-	IN	LIMIT X
+ *	25	-	IN	LIMIT Y
+ *	24	-	IN	LIMIT Z
+ *	14	RA1	OUT	DATA REQUEST	active low
+ *	10	RB2	OUT	MOSI
+ *	11	RB15	OUT	SCLK
+ *	18	MCLR	OUT	RESET		tri-state, hi-Z
+ *
+ */
+
 void setup_gpio() {
 	u32 x;
 
@@ -530,23 +540,23 @@ void setup_gpio() {
 	x &= ~(0b111 << (4*3));
 	x |= (0b001 << (4*3));
 	BCM2835_GPFSEL1 = x;
-
 	/* clear request, active low */
 	BCM2835_GPSET0 = (1l << 14);
 
-	/* GPIO 23 24, output */
+	/* GPIO 23 24, 25, input */
 	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (3*3) | 0b111 << (4*3));
-	x |= (0b001 << (3*3) | 0b001 << (4*3));
+	x &= ~(0b111 << (3*3) | 0b111 << (4*3) | 0b111 << (5*3));
 	BCM2835_GPFSEL2 = x;
 
-	/* clear GPIO 23 24, active low */
-	BCM2835_GPSET0 = (1l << 23 | 1l << 24);
-
-	/* reset GPIO 7, tri-state, hi-Z */
+	/* GPIO 8, input */
 	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
+	x &= ~(0b111 << (8*3));
 	BCM2835_GPFSEL0 = x;
+
+	/* reset GPIO 18, tri-state, hi-Z */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (8*3));
+	BCM2835_GPFSEL1 = x;
 
 	/* change SPI pins */
 	x = BCM2835_GPFSEL0;
@@ -580,17 +590,12 @@ void restore_gpio() {
 	x |= (0b100 << (4*3) | 0b100 << (5*3));
 	BCM2835_GPFSEL1 = x;
 
-	/* change all used pins back to inputs */
+	/* change all used output pins back to inputs */
 
-	/* GPIO 7 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	BCM2835_GPFSEL0 = x;
-
-	/* GPIO 23 24 */
-	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (3*3) | 0b111 << (4*3));
-	BCM2835_GPFSEL2 = x;
+	/* GPIO 18 */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (8*3));
+	BCM2835_GPFSEL1 = x;
 
 	/* change SPI pins to inputs*/
 	x = BCM2835_GPFSEL0;

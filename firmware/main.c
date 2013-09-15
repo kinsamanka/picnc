@@ -171,7 +171,7 @@ int main(void) {
 			stepgen_get_position((void *)&txBuf[1]);
 
 			/* read inputs */
-			txBuf[5] = PORTB & 0x3E0;
+			txBuf[5] = 0;
 
 			/* sanity check */
 			txBuf[0] = rxBuf[0];
@@ -250,5 +250,3 @@ void __ISR(_DMA0_VECTOR, ipl5) DmaHandler0(void) {
 		spi_data_ready = 1;
 	}
 }
-
-

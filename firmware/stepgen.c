@@ -56,7 +56,7 @@ static int dirchange[MAXGEN] = { 0 };
 
 static volatile stepgen_input_struct stepgen_input = { {0} };
 
-static int do_step_hi[MAXGEN] = {1, 1, 1};
+static int do_step_hi[MAXGEN] = { 0 };
 
 void stepgen_get_position(void *buf) {
 	disable_int();
@@ -154,6 +154,8 @@ __inline__ void step_hi(int i) {
 		STEPHI_Y;
 	if (i == 2)
 		STEPHI_Z;
+	if (i == 3)
+		STEPHI_A;
 }
 
 __inline__ void step_lo(int i) {
@@ -163,6 +165,8 @@ __inline__ void step_lo(int i) {
 		STEPLO_Y;
 	if (i == 2)
 		STEPLO_Z;
+	if (i == 3)
+		STEPLO_A;
 }
 
 __inline__ void dir_hi(int i) {
@@ -172,6 +176,8 @@ __inline__ void dir_hi(int i) {
 		DIR_HI_Y;
 	if (i == 2)
 		DIR_HI_Z;
+	if (i == 3)
+		DIR_HI_A;
 }
 
 __inline__ void dir_lo(int i) {
@@ -181,4 +187,6 @@ __inline__ void dir_lo(int i) {
 		DIR_LO_Y;
 	if (i == 2)
 		DIR_LO_Z;
+	if (i == 3)
+		DIR_LO_A;
 }

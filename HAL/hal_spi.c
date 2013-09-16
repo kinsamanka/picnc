@@ -291,6 +291,7 @@ static void read_spi(void *arg, long period) {
 	*(spi->pin_in[1]) = (BCM2835_GPLEV0 & (1l <<  8) ? 1 : 0);
 	*(spi->pin_in[2]) = (BCM2835_GPLEV0 & (1l << 25) ? 1 : 0);
 	*(spi->pin_in[3]) = (BCM2835_GPLEV0 & (1l << 24) ? 1 : 0);
+}
 
 static void write_spi(void *arg, long period) {
 	transfer_data();

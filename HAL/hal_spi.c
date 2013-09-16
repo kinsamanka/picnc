@@ -54,8 +54,8 @@ typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
 	            *position_fb[NUMAXES],
 	            *pwm_duty;
-	hal_bit_t   *pin_out[1],
-	            *pin_in[4],
+	hal_bit_t   *pin_out[5],
+	            *pin_in[5],
 	            *ready;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],

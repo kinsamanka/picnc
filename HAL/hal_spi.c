@@ -287,18 +287,10 @@ static void read_spi(void *arg, long period) {
 	}
 
 	/* update input status */
-#if 0
-	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
-	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
-	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
-	*(spi->pin_in[3]) = (get_inputs() & 0b000100000000) ? 1 : 0;
-	*(spi->pin_in[4]) = (get_inputs() & 0b001000000000) ? 1 : 0;
-#else
         *(spi->pin_in[0]) = (BCM2835_GPLEV0 & (1l << 23) ? 1 : 0);
         *(spi->pin_in[1]) = (BCM2835_GPLEV0 & (1l <<  8) ? 1 : 0);
         *(spi->pin_in[2]) = (BCM2835_GPLEV0 & (1l << 25) ? 1 : 0);
         *(spi->pin_in[3]) = (BCM2835_GPLEV0 & (1l << 24) ? 1 : 0);
-#endif
 }
 
 static void write_spi(void *arg, long period) {
@@ -403,20 +395,13 @@ static void update(void *arg, long period) {
 		/* calculate new velocity cmd */
 		update_velocity(i, (new_vel * VELSCALE));
 	}
-#if 0
-	/* update rpi output, active low */
-	BCM2835_GPCLR0 = (*(spi->pin_out[3]) ? 1l : 0) << 23 ;	/* GPIO23 */
-	BCM2835_GPSET0 = (*(spi->pin_out[3]) ? 0 : 1l) << 23 ;
-	BCM2835_GPCLR0 = (*(spi->pin_out[4]) ? 1l : 0) << 24 ;	/* GPIO24 */
-	BCM2835_GPSET0 = (*(spi->pin_out[4]) ? 0 : 1l) << 24 ;
 
-	/* update pic32 output */
-	txBuf[1+NUMAXES] = (*(spi->pin_out[0]) ? 1l : 0) << 11 |
-	        (*(spi->pin_out[1]) ? 1l : 0) << 12 |
-	        (*(spi->pin_out[2]) ? 1l : 0) << 14 ;
-#else
+	/* update outputs */
 	txBuf[1+NUMAXES] = 0;
-#endif
+	for (i = 0; i < 0; i++) {
+		txBuf[1+NUMAXES] |= (*(spi->pin_out[i]) ? 1l : 0) << i;
+	}
+
 	/* update pwm */
 	duty = *spi->pwm_duty * spi->pwm_scale * 0.01;
 	if (duty < 0.0) duty = 0.0;

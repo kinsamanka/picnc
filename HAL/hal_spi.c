@@ -515,6 +515,21 @@ int map_gpio() {
 	return 0;
 }
 
+/*    GPIO USAGE
+ *
+ *	GPIO	Dir	Signal		Note
+ *
+ *	15	IN	DATA READY	active low
+ *	9	IN	MISO
+ *	14	OUT	DATA REQUEST	active low
+ *	10	OUT	MOSI
+ *	11	OUT	SCLK
+ *	7	OUT	RESET		tri-state, hi-Z
+ *	23	OUT	GP OUTPUT
+ *	24	OUT	GP OUTPUT
+ *
+ */
+
 void setup_gpio() {
 	u32 x;
 

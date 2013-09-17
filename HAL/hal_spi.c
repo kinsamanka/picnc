@@ -54,8 +54,8 @@ typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
 	            *position_fb[NUMAXES],
 	            *pwm_duty;
-	hal_bit_t   *pin_out[5],
-	            *pin_in[5],
+	hal_bit_t   *pin_out[8],
+	            *pin_in[8],
 	            *ready;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],
@@ -74,12 +74,12 @@ volatile int32_t txBuf[BUFSIZE], rxBuf[BUFSIZE+1];
 static u32 pwm_period = 0;
 
 static double dt = 0,				/* update_freq period in seconds */
-	      recip_dt = 0,			/* reciprocal of period, avoids divides */
-	      scale_inv[NUMAXES] = { 1.0 },	/* inverse of scale */
-	      old_vel[NUMAXES] = { 0 },
-	      old_pos[NUMAXES] = { 0 },
-	      old_scale[NUMAXES] = { 0 },
-	      max_vel;
+              recip_dt = 0,			/* reciprocal of period, avoids divides */
+              scale_inv[NUMAXES] = { 1.0 },	/* inverse of scale */
+              old_vel[NUMAXES] = { 0 },
+              old_pos[NUMAXES] = { 0 },
+              old_scale[NUMAXES] = { 0 },
+              max_vel;
 static long old_dtns = 0;			/* update_freq funct period in nsec */
 static s32 accum_diff = 0,
            old_count[NUMAXES] = { 0 };
@@ -158,7 +158,7 @@ int rtapi_app_main(void) {
 		spi_data->maxaccel[n] = 1.0;
 	}
 
-	for (n=0; n < (5); n++) {
+	for (n=0; n < 8; n++) {
 		retval = hal_pin_bit_newf(HAL_IN, &(spi_data->pin_out[n]),
 		        comp_id, "%s.pin.%01d.out", prefix, n);
 		if (retval < 0) goto error;
@@ -252,7 +252,7 @@ static void read_spi(void *arg, long period) {
 
 	/* sanity check */
 	if (((u32)rxBuf[1] >> 8) == (rxBuf[BUFSIZE] & 0xffffff) &&
-		((u32)rxBuf[1] >> 8) == 0x444D43)	/* CMD */
+	        ((u32)rxBuf[1] >> 8) == 0x444D43)	/* CMD */
 		*(spi->ready) = 1;
 	else
 		*(spi->ready) = 0;
@@ -287,10 +287,18 @@ static void read_spi(void *arg, long period) {
 	}
 
 	/* update input status */
-	*(spi->pin_in[0]) = (BCM2835_GPLEV0 & (1l << 23) ? 1 : 0);
-	*(spi->pin_in[1]) = (BCM2835_GPLEV0 & (1l <<  8) ? 1 : 0);
-	*(spi->pin_in[2]) = (BCM2835_GPLEV0 & (1l << 25) ? 1 : 0);
-	*(spi->pin_in[3]) = (BCM2835_GPLEV0 & (1l << 24) ? 1 : 0);
+#if 0
+	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
+	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
+	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
+	*(spi->pin_in[3]) = (get_inputs() & 0b000100000000) ? 1 : 0;
+	*(spi->pin_in[4]) = (get_inputs() & 0b001000000000) ? 1 : 0;
+#else
+        *(spi->pin_in[0]) = (BCM2835_GPLEV0 & (1l << 23) ? 1 : 0);
+        *(spi->pin_in[1]) = (BCM2835_GPLEV0 & (1l <<  8) ? 1 : 0);
+        *(spi->pin_in[2]) = (BCM2835_GPLEV0 & (1l << 25) ? 1 : 0);
+        *(spi->pin_in[3]) = (BCM2835_GPLEV0 & (1l << 24) ? 1 : 0);
+#endif
 }
 
 static void write_spi(void *arg, long period) {
@@ -395,13 +403,20 @@ static void update(void *arg, long period) {
 		/* calculate new velocity cmd */
 		update_velocity(i, (new_vel * VELSCALE));
 	}
-
+#if 0
+	/* update rpi output, active low */
+	BCM2835_GPCLR0 = (*(spi->pin_out[3]) ? 1l : 0) << 23 ;	/* GPIO23 */
+	BCM2835_GPSET0 = (*(spi->pin_out[3]) ? 0 : 1l) << 23 ;
+	BCM2835_GPCLR0 = (*(spi->pin_out[4]) ? 1l : 0) << 24 ;	/* GPIO24 */
+	BCM2835_GPSET0 = (*(spi->pin_out[4]) ? 0 : 1l) << 24 ;
 
 	/* update pic32 output */
 	txBuf[1+NUMAXES] = (*(spi->pin_out[0]) ? 1l : 0) << 11 |
 	        (*(spi->pin_out[1]) ? 1l : 0) << 12 |
 	        (*(spi->pin_out[2]) ? 1l : 0) << 14 ;
-
+#else
+	txBuf[1+NUMAXES] = 0;
+#endif
 	/* update pwm */
 	duty = *spi->pwm_duty * spi->pwm_scale * 0.01;
 	if (duty < 0.0) duty = 0.0;
@@ -454,11 +469,11 @@ void reset_board() {
 
 	/* board reset is active low */
 	for (i=0; i<0x10000; i++)
-		BCM2835_GPCLR1 = (1l << 8);
+		BCM2835_GPCLR0 = (1l << 18);
 
 	/* wait until the board is ready */
 	for (i=0; i<0x300000; i++)
-		BCM2835_GPSET1 = (1l << 8);
+		BCM2835_GPSET0 = (1l << 18);
 
 	/* reset GPIO 18 back to input */
 	x = BCM2835_GPFSEL1;
@@ -511,18 +526,19 @@ int map_gpio() {
 
 /*    GPIO USAGE
  *
- *	GPIO	Port	Dir	Signal		Note
+ *	GPIO	Dir	Signal		Note
  *
- *	15	RB0	IN	DATA READY	active low
- *	9	RB1	IN	MISO
- *	23	-	IN	E-STOP
- *	8	-	IN	LIMIT X
- *	25	-	IN	LIMIT Y
- *	24	-	IN	LIMIT Z
- *	14	RA1	OUT	DATA REQUEST	active low
- *	10	RB2	OUT	MOSI
- *	11	RB15	OUT	SCLK
- *	18	MCLR	OUT	RESET		tri-state, hi-Z
+ *	8	IN	LIMIT X
+ *	15	IN	DATA READY	active low
+ *	23	IN	E-STOP
+ *	24	IN	LIMIT Z
+ *	25	IN	LIMIT Y
+ *	14	OUT	DATA REQUEST	active low
+ *	18	OUT	RESET		tri-state, hi-Z
+ *
+ *	9	IN	MISO		SPI
+ *	10	OUT	MOSI		SPI
+ *	11	OUT	SCLK		SPI
  *
  */
 
@@ -531,32 +547,33 @@ void setup_gpio() {
 
 	/* disable UART pins and use as gpio */
 
-	/* data ready GPIO 15, input */
 	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (5*3));
+	x &= ~(0b111 << (5*3));		/* data ready GPIO 15, input */
 	BCM2835_GPFSEL1 = x;
 
-	/* data request GPIO 14, output */
 	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (4*3));
+	x &= ~(0b111 << (4*3));		/* data request GPIO 14, output */
 	x |= (0b001 << (4*3));
 	BCM2835_GPFSEL1 = x;
-	/* clear request, active low */
-	BCM2835_GPSET0 = (1l << 14);
 
-	/* GPIO 23 24, 25, input */
-	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (3*3) | 0b111 << (4*3) | 0b111 << (5*3));
-	BCM2835_GPFSEL2 = x;
+	BCM2835_GPSET0 = (1l << 14);	/* clear request, active low */
 
-	/* GPIO 8, input */
+	/* configure inputs */
+
 	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (8*3));
+	x &= ~(0b111 << (8*3));		/* GPIO 8 limit x */
 	BCM2835_GPFSEL0 = x;
 
-	/* reset GPIO 18, tri-state, hi-Z */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (3*3) |		/* GPIO 23 E-stop */
+	       0b111 << (4*3) |		/* GPIO 24 limit z */
+	       0b111 << (5*3));		/* GPIO 25 limit y */
+	BCM2835_GPFSEL2 = x;
+
+	/* configure outputs */
+
 	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (8*3));
+	x &= ~(0b111 << (8*3));		/* reset GPIO 18, tri-state, hi-Z */
 	BCM2835_GPFSEL1 = x;
 
 	/* change SPI pins */
@@ -591,12 +608,19 @@ void restore_gpio() {
 	x |= (0b100 << (4*3) | 0b100 << (5*3));
 	BCM2835_GPFSEL1 = x;
 
-	/* change all used output pins back to inputs */
+	/* change all used pins back to inputs */
 
-	/* GPIO 18 */
+	x = BCM2835_GPFSEL0;
+	x &= ~(0b111 << (8*3));
+	BCM2835_GPFSEL0 = x;
+
 	x = BCM2835_GPFSEL1;
 	x &= ~(0b111 << (8*3));
 	BCM2835_GPFSEL1 = x;
+
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (3*3) | 0b111 << (4*3) | 0b111 << (5*3));
+	BCM2835_GPFSEL2 = x;
 
 	/* change SPI pins to inputs*/
 	x = BCM2835_GPFSEL0;

@@ -29,11 +29,11 @@
  *
  *	Pin	Port	Dir	Signal
  *
+ *	2	RA0	OUT	Status LED
  *	9	RA2	OUT	OUTPUT 0
  *	10	RA3	OUT	PWM
  *	4	RB0	OUT	DATA READY
  *	5	RB1	OUT	MISO
- *	14	RB5	OUT	Status LED
  *	15	RB6	OUT	DIR_A
  *	16	RB7	OUT	STEP_A
  *	17	RB8	OUT	DIR_Z
@@ -47,7 +47,7 @@
  *	6	RB2	IN	MOSI
  *	26	RB15	IN	SCLK
  *
- *	2	RA0	IN	unused
+ *	14	RB5	IN	unused
  *	12	RA4	IN	unused
  *	7	RB3	IN	unused
  *	11	RB4	IN	unused
@@ -55,7 +55,7 @@
  *
  */
  
-#define LED0_BLINK		(LATBINV = BIT_5)
+#define LED0_BLINK		(LATAINV = BIT_0)
 #define REQ_IO_IN		(PORTAbits.RA1)
 #define RDY_IO_LO		(LATBCLR = BIT_0)
 #define RDY_IO_HI		(LATBSET = BIT_0)
@@ -76,15 +76,15 @@
 
 #define configure_inputs()							\
 	do {									\
-		TRISASET = BIT_0  | BIT_1  | BIT_4 ;				\
+		TRISASET = BIT_1  | BIT_4 ;				\
 		TRISBSET = BIT_2  | BIT_3  | BIT_4  |				\
-			   BIT_14 | BIT_15 ;					\
+			   BIT_5  | BIT_14 | BIT_15 ;					\
 	} while (0)
  
 #define configure_outputs()							\
 	do {									\
-		TRISACLR = BIT_2  | BIT_3  ;					\
-		TRISBCLR = BIT_0  | BIT_1  | BIT_5  | BIT_6  |			\
+		TRISACLR = BIT_0  | BIT_2  | BIT_3  ;					\
+		TRISBCLR = BIT_0  | BIT_1  | BIT_6  |			\
 			   BIT_7  | BIT_8  | BIT_9  | BIT_10 |			\
 			   BIT_11 | BIT_12 | BIT_13 ;				\
 	} while (0)
@@ -112,9 +112,15 @@
 		OC3RS = (val);							\
 	} while (0)
 
+#define update_inputs(val)							\
+	do {									\
+		(val) = 0;							\
+	} while (0)
+
 /* Note the outputs are inverted */
 
-#define PORTA_OUT_MASK	(BIT_2)
+//#define PORTA_OUT_MASK	(BIT_2)
+#define PORTA_OUT_MASK	(0)
 #define update_outputs(val)							\
 	do {									\
 		LATACLR =  PORTA_OUT_MASK &  (val);				\

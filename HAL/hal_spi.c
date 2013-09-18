@@ -247,7 +247,7 @@ void rtapi_app_exit(void) {
 	hal_exit(comp_id);
 }
 
-static inline update_inputs(spi_data_t *spi) {
+static inline void update_inputs(spi_data_t *spi) {
 	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
 	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
 	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
@@ -317,7 +317,7 @@ static void write_spi(void *arg, long period) {
 	transfer_data();
 }
 
-static inline update_outputs(spi_data_t *spi) {
+static inline void update_outputs(spi_data_t *spi) {
 	float duty;
 
 	/* update rpi output, active low */

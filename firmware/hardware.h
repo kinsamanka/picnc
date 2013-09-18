@@ -60,63 +60,54 @@
 #define RDY_IO_HI		(LATBSET = BIT_0)
 
 /* enable pull-ups on REQ_IO_IN line */
-#define REQ_CNPU_Enable()							\
-	do {									\
-		ConfigCNBPullups(CNB1_PULLUP_ENABLE);				\
-	} while (0)
+#define REQ_CNPU_Enable()	ConfigCNBPullups(CNB1_PULLUP_ENABLE)
 
 /* map SPI and PWM pins */
-#define configure_PPS()								\
-	do {									\
-		PPSInput(3, SDI2, RPB13);					\
-		PPSOutput(2, RPA1, SDO2);					\
-		PPSOutput(4, RPB10, OC3);					\
-	} while (0)
+static inline void configure_PPS() {
+	PPSInput(3, SDI2, RPB13);	/* MOSI */
+	PPSOutput(2, RPA1, SDO2);	/* MISO */
+	PPSOutput(4, RPB10, OC3);	/* PWM */
+}
 
-#define configure_inputs()							\
-	do {									\
-		TRISBSET = BIT_15 | BIT_13 | BIT_9 | BIT_8 |			\
-			   BIT_7  | BIT_6  | BIT_5 | BIT_1 ;			\
-	} while (0)
 
-#define configure_outputs()							\
-	do {									\
-		TRISBCLR = BIT_14 | BIT_12 | BIT_11 | BIT_10 |			\
-			   BIT_4  | BIT_3  | BIT_2  | BIT_0 ;			\
-		TRISACLR = BIT_4  | BIT_3  | BIT_2  | BIT_1  | BIT_0;		\
-	} while (0)
+static inline void configure_inputs() {
+	TRISBSET = BIT_15 | BIT_13 | BIT_9 | BIT_8 |
+		   BIT_7  | BIT_6  | BIT_5 | BIT_1 ;
+}
+
+static inline void configure_outputs() {
+	TRISBCLR = BIT_14 | BIT_12 | BIT_11 | BIT_10 |
+		   BIT_4  | BIT_3  | BIT_2  | BIT_0 ;
+	TRISACLR = BIT_4  | BIT_3  | BIT_2  | BIT_1  | BIT_0;
+}
 
 /* PWM is using OC3 and Timer2, note output pin is inverted */
-#define configure_pwm()								\
-	do {									\
-		OC3CON = 0x0000;	/* disable OC3 */			\
-		OC3R = ~0;		/* set output high */			\
-		OC3RS = ~0;							\
-		OC3CON = 0x0006;	/* PWM mode, fault pin disabled */	\
-		T2CONSET = 0x0008;	/* Timer2 32 bit mode */		\
-		PR2 = 0x9C3F;		/* set period, 1kHz */			\
-		T2CONSET = 0x8000;	/* start timer */			\
-		OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */		\
-	} while (0)
+static inline void configure_pwm() {
+	OC3CON = 0x0000;	/* disable OC3 */
+	OC3R = ~0;		/* set output high */
+	OC3RS = ~0;
+	OC3CON = 0x0006;	/* PWM mode, fault pin disabled */
+	T2CONSET = 0x0008;	/* Timer2 32 bit mode */
+	PR2 = 0x9C3F;		/* set period, 1kHz */
+	T2CONSET = 0x8000;	/* start timer */
+	OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */
+}
 
-#define update_pwm_period(val)								\
-	do {									\
-		PR2 = (val);							\
-	} while (0)
+static inline void update_pwm_period(uint32_t val) {
+	PR2 = val;
+}
 
-#define update_pwm_duty(val)								\
-	do {									\
-		OC3RS = (val);							\
-	} while (0)
+static inline void update_pwm_duty(uint32_t val) {
+	OC3RS = val;
+}
 
 /* Note the outputs are inverted */
 
 #define PORTB_OUT_MASK	(BIT_14 | BIT_12 | BIT_11)
-#define update_outputs(val)							\
-	do {									\
-		LATBCLR =  PORTB_OUT_MASK &  (val);				\
-		LATBSET =  PORTB_OUT_MASK & ~(val);				\
-	} while (0)
+static inline void update_outputs(uint32_t val) {
+	LATBCLR =  PORTB_OUT_MASK &  (val);
+	LATBSET =  PORTB_OUT_MASK & ~(val);
+}
 
 #define STEPHI_X		(LATACLR = BIT_3)
 #define STEPLO_X		(LATASET = BIT_3)

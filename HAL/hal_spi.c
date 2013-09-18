@@ -247,6 +247,14 @@ void rtapi_app_exit(void) {
 	hal_exit(comp_id);
 }
 
+static inline update_inputs(spi_data_t *spi) {
+	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
+	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
+	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
+	*(spi->pin_in[3]) = (get_inputs() & 0b000100000000) ? 1 : 0;
+	*(spi->pin_in[4]) = (get_inputs() & 0b001000000000) ? 1 : 0;
+}
+
 static void read_spi(void *arg, long period) {
 	int i;
 	spi_data_t *spi = (spi_data_t *)arg;
@@ -302,21 +310,40 @@ static void read_spi(void *arg, long period) {
 	}
 
 	/* update input status */
-	*(spi->pin_in[0]) = (get_inputs() & 0b000000100000) ? 1 : 0;
-	*(spi->pin_in[1]) = (get_inputs() & 0b000001000000) ? 1 : 0;
-	*(spi->pin_in[2]) = (get_inputs() & 0b000010000000) ? 1 : 0;
-	*(spi->pin_in[3]) = (get_inputs() & 0b000100000000) ? 1 : 0;
-	*(spi->pin_in[4]) = (get_inputs() & 0b001000000000) ? 1 : 0;
+	update_inputs(spi);
 }
 
 static void write_spi(void *arg, long period) {
 	transfer_data();
 }
 
+static inline update_outputs(spi_data_t *spi) {
+	float duty;
+
+	/* update rpi output, active low */
+	BCM2835_GPCLR0 = (*(spi->pin_out[3]) ? 1l : 0) << 23 ;	/* GPIO23 */
+	BCM2835_GPSET0 = (*(spi->pin_out[3]) ? 0 : 1l) << 23 ;
+	BCM2835_GPCLR0 = (*(spi->pin_out[4]) ? 1l : 0) << 24 ;	/* GPIO24 */
+	BCM2835_GPSET0 = (*(spi->pin_out[4]) ? 0 : 1l) << 24 ;
+
+	/* update pic32 output */
+	txBuf[1+NUMAXES] = (*(spi->pin_out[0]) ? 1l : 0) << 11 |
+	        (*(spi->pin_out[1]) ? 1l : 0) << 12 |
+	        (*(spi->pin_out[2]) ? 1l : 0) << 14 ;
+
+	/* update pwm */
+	duty = *(spi->pwm_duty[0]) * spi->pwm_scale[0] * 0.01;
+	if (duty < 0.0) duty = 0.0;
+	if (duty > 1.0) duty = 1.0;
+
+	duty = 1.0 - duty;		/* pwm output is active low */
+
+	txBuf[2+NUMAXES] = (duty * (1.0 + pwm_period));
+}
+
 static void update(void *arg, long period) {
 	int i;
 	spi_data_t *spi = (spi_data_t *)arg;
-	float duty;
 	double max_accl, vel_cmd, dv, new_vel,
 	       dp, pos_cmd, curr_pos, match_accl, match_time, avg_v,
 	       est_out, est_cmd, est_err;
@@ -412,25 +439,7 @@ static void update(void *arg, long period) {
 		update_velocity(i, (new_vel * VELSCALE));
 	}
 
-	/* update rpi output, active low */
-	BCM2835_GPCLR0 = (*(spi->pin_out[3]) ? 1l : 0) << 23 ;	/* GPIO23 */
-	BCM2835_GPSET0 = (*(spi->pin_out[3]) ? 0 : 1l) << 23 ;
-	BCM2835_GPCLR0 = (*(spi->pin_out[4]) ? 1l : 0) << 24 ;	/* GPIO24 */
-	BCM2835_GPSET0 = (*(spi->pin_out[4]) ? 0 : 1l) << 24 ;
-
-	/* update pic32 output */
-	txBuf[1+NUMAXES] = (*(spi->pin_out[0]) ? 1l : 0) << 11 |
-	        (*(spi->pin_out[1]) ? 1l : 0) << 12 |
-	        (*(spi->pin_out[2]) ? 1l : 0) << 14 ;
-
-	/* update pwm */
-	duty = *(spi->pwm_duty[0]) * spi->pwm_scale[0] * 0.01;
-	if (duty < 0.0) duty = 0.0;
-	if (duty > 1.0) duty = 1.0;
-
-	duty = 1.0 - duty;		/* pwm output is active low */
-
-	txBuf[2+NUMAXES] = (duty * (1.0 + pwm_period));
+	update_outputs(spi);
 
 	/* this is a command (>CMD) */
 	txBuf[0] = 0x444D433E;
@@ -535,10 +544,10 @@ int map_gpio() {
  *	GPIO	Dir	Signal		Note
  *
  *	15	IN	DATA READY	active low
- *	9	IN	MISO
+ *	9	IN	MISO		SPI
  *	14	OUT	DATA REQUEST	active low
- *	10	OUT	MOSI
- *	11	OUT	SCLK
+ *	10	OUT	MOSI		SPI
+ *	11	OUT	SCLK		SPI
  *	7	OUT	RESET		tri-state, hi-Z
  *	23	OUT	GP OUTPUT
  *	24	OUT	GP OUTPUT

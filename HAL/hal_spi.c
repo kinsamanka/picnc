@@ -55,8 +55,8 @@ typedef struct {
 	            *position_fb[NUMAXES],
 	            *pwm_duty[2],
 	            *adc_in[2];
-	hal_bit_t   *pin_out[16],
-	            *pin_in[16],
+	hal_bit_t   *pin_out[24],
+	            *pin_in[24],
 	            *ready;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],
@@ -160,7 +160,7 @@ int rtapi_app_main(void) {
 		spi_data->maxaccel[n] = 1.0;
 	}
 
-	for (n=0; n < 16; n++) {
+	for (n=0; n < 24; n++) {
 		retval = hal_pin_bit_newf(HAL_IN, &(spi_data->pin_out[n]),
 		        comp_id, "%s.pin.%01d.out", prefix, n);
 		if (retval < 0) goto error;

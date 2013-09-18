@@ -101,6 +101,10 @@ static inline void update_pwm_duty(uint32_t val) {
 	OC3RS = val;
 }
 
+static inline uint32_t read_inputs() {
+	return (PORTB & 0x3E0);
+}
+
 /* Note the outputs are inverted */
 
 #define PORTB_OUT_MASK	(BIT_14 | BIT_12 | BIT_11)

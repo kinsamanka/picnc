@@ -171,7 +171,7 @@ int main(void) {
 			stepgen_get_position((void *)&txBuf[1]);
 
 			/* read inputs */
-			txBuf[5] = PORTB & 0x3E0;
+			txBuf[5] = read_inputs();
 
 			/* sanity check */
 			txBuf[0] = rxBuf[0];

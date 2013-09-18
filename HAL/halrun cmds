@@ -1,0 +1,13 @@
+loadrt threads name1=test period1=1000000
+loadrt hal_spi
+
+setp spi.0.scale 100
+setp spi.0.maxaccel 10
+
+addf spi.read test
+addf spi.update test
+addf spi.write test
+start
+loadusr halmeter
+# monitor spi.0.position-fb
+setp spi.0.position-cmd 1000

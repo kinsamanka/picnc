@@ -53,13 +53,15 @@ RTAPI_MP_LONG(pwmfreq, "PWM frequency in Hz");
 typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
 	            *position_fb[NUMAXES],
-	            *pwm_duty;
-	hal_bit_t   *pin_out[5],
-	            *pin_in[5],
+	            *pwm_duty[2],
+	            *adc_in[2];
+	hal_bit_t   *pin_out[16],
+	            *pin_in[16],
 	            *ready;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],
-	            pwm_scale;
+	            adc_scale[2],
+	            pwm_scale[2];
 } spi_data_t;
 
 static spi_data_t *spi_data;
@@ -74,12 +76,12 @@ volatile int32_t txBuf[BUFSIZE], rxBuf[BUFSIZE+1];
 static u32 pwm_period = 0;
 
 static double dt = 0,				/* update_freq period in seconds */
-	      recip_dt = 0,			/* reciprocal of period, avoids divides */
-	      scale_inv[NUMAXES] = { 1.0 },	/* inverse of scale */
-	      old_vel[NUMAXES] = { 0 },
-	      old_pos[NUMAXES] = { 0 },
-	      old_scale[NUMAXES] = { 0 },
-	      max_vel;
+              recip_dt = 0,			/* reciprocal of period, avoids divides */
+              scale_inv[NUMAXES] = { 1.0 },	/* inverse of scale */
+              old_vel[NUMAXES] = { 0 },
+              old_pos[NUMAXES] = { 0 },
+              old_scale[NUMAXES] = { 0 },
+              max_vel;
 static long old_dtns = 0;			/* update_freq funct period in nsec */
 static s32 accum_diff = 0,
            old_count[NUMAXES] = { 0 };
@@ -158,7 +160,7 @@ int rtapi_app_main(void) {
 		spi_data->maxaccel[n] = 1.0;
 	}
 
-	for (n=0; n < (5); n++) {
+	for (n=0; n < 16; n++) {
 		retval = hal_pin_bit_newf(HAL_IN, &(spi_data->pin_out[n]),
 		        comp_id, "%s.pin.%01d.out", prefix, n);
 		if (retval < 0) goto error;
@@ -170,20 +172,33 @@ int rtapi_app_main(void) {
 		*(spi_data->pin_in[n]) = 0;
 	}
 
-	retval = hal_pin_float_newf(HAL_IN, &(spi_data->pwm_duty), comp_id,
-	        "%s.pwm-duty", prefix);
-	if (retval < 0) goto error;
-	*(spi_data->pwm_duty) = 0.0;
+	for (n=0; n < 2; n++) {
+		retval = hal_pin_float_newf(HAL_IN, &(spi_data->pwm_duty[n]),
+		        comp_id, "%s.pwm.%01d.duty", prefix, n);
+		if (retval < 0) goto error;
+		*(spi_data->pwm_duty[n]) = 0.0;
+
+		retval = hal_pin_float_newf(HAL_OUT, &(spi_data->adc_in[n]),
+		        comp_id, "%s.adc.%01d.in", prefix, n);
+		if (retval < 0) goto error;
+		*(spi_data->adc_in[n]) = 0.0;
+
+		retval = hal_param_float_newf(HAL_RW, &(spi_data->pwm_scale[n]),
+			comp_id,"%s.pwm.%01d.scale", prefix);
+		if (retval < 0) goto error;
+		spi_data->pwm_scale[n] = 1.0;
+
+		retval = hal_param_float_newf(HAL_RW, &(spi_data->adc_scale[n]),
+			comp_id,"%s.adc.%01d.scale", prefix);
+		if (retval < 0) goto error;
+		spi_data->adc_scale[n] = 1.0;
+	}
 
 	retval = hal_pin_bit_newf(HAL_OUT, &(spi_data->ready), comp_id,
 	        "%s.ready", prefix);
 	if (retval < 0) goto error;
 	*(spi_data->ready) = 0;
 
-	retval = hal_param_float_newf(HAL_RW, &(spi_data->pwm_scale), comp_id,
-	        "%s.pwm-scale", prefix);
-	if (retval < 0) goto error;
-	spi_data->pwm_scale = 1.0;
 error:
 	if (retval < 0) {
 		rtapi_print_msg(RTAPI_MSG_ERR,
@@ -252,7 +267,7 @@ static void read_spi(void *arg, long period) {
 
 	/* sanity check */
 	if (((u32)rxBuf[1] >> 8) == (rxBuf[BUFSIZE] & 0xffffff) &&
-		((u32)rxBuf[1] >> 8) == 0x444D43)	/* CMD */
+	        ((u32)rxBuf[1] >> 8) == 0x444D43)	/* CMD */
 		*(spi->ready) = 1;
 	else
 		*(spi->ready) = 0;
@@ -409,7 +424,7 @@ static void update(void *arg, long period) {
 	        (*(spi->pin_out[2]) ? 1l : 0) << 14 ;
 
 	/* update pwm */
-	duty = *spi->pwm_duty * spi->pwm_scale * 0.01;
+	duty = *(spi->pwm_duty[0]) * spi->pwm_scale[0] * 0.01;
 	if (duty < 0.0) duty = 0.0;
 	if (duty > 1.0) duty = 1.0;
 

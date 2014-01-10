@@ -21,26 +21,25 @@
 #include "hardware.h"
 #include "stepgen.h"
 
-#pragma config POSCMOD = OFF		/* Primary Oscillator disabled */
-#pragma config FNOSC = FRCPLL		/* Fast RC Osc w/Div-by-N */
-#pragma config FPLLODIV = DIV_2		/* PLL configured for 40MHz clock */
+#pragma config POSCMOD = XT		/* Primary Oscillator XT mode */
+#pragma config FNOSC = PRIPLL		/* Primary Osc w/PLL */
+#pragma config FPLLODIV = DIV_1		/* PLL configured for 80MHz clock */
 #pragma config FPLLMUL = MUL_20
 #pragma config FPLLIDIV = DIV_2
 #pragma config FPBDIV = DIV_1		/* Peripheral Clock Divisor */
 #pragma config IESO = ON		/* Internal/External Switch Over disabled */
 #pragma config FSOSCEN = OFF		/* Secondary Oscillator disabled */
 #pragma config CP = OFF			/* Code Protect Disabled */
-#pragma config FWDTEN = ON		/* Watchdog Timer Enable */
+#pragma config FWDTEN = OFF		/* Watchdog Timer Disable */
 #pragma config WDTPS = PS4096		/* Watchdog Timer Postscaler */
-#pragma config PMDL1WAY = OFF		/* Allow multiple PM configurations */
-#pragma config IOL1WAY = OFF		/* Allow multiple PPS configurations */
+#pragma config FVBUSONIO = OFF		/* VBUSON pin is GPIO */
+#pragma config FUSBIDIO = OFF		/* USBID pin is GPIO */
 
-#define BASEFREQ			80000
+#define BASEFREQ			160000
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define CORE_DIVIDER			(BASEFREQ/CLOCK_CONF_SECOND)
 
-#define SPIBUFSIZE			32	/* BCM2835 SPI buffer size for 
-						   PIC32MX150F128B */
+#define SPIBUFSIZE			32
 #define BUFSIZE				(SPIBUFSIZE/4)
 
 #define ENABLE_WATCHDOG
@@ -48,49 +47,39 @@
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready;
 
-static void map_peripherals() {
-	/* unlock PPS sequence */
-	SYSKEY = 0x0;			/* make sure it is locked */
-	SYSKEY = 0xAA996655;		/* Key 1 */
-	SYSKEY = 0x556699AA;		/* Key 2 */
-	CFGCONbits.IOLOCK=0;		/* now it is unlocked */
+static void init_io_ports()
+{
+	U1PWRCbits.USUSPEND = 1;
+	U1PWRCbits.USBPWR = 0;
 
-	/* map SPI and PWM pins */
-	PPSInput(3, SDI2, RPB13);	/* MOSI */
-	PPSOutput(2, RPB11, SDO2);	/* MISO */
-	PPSOutput(4, RPB14, OC3);	/* PWM */
-
-	/* lock PPS sequence */
-	CFGCONbits.IOLOCK=1;		/* now it is locked */
-	SYSKEY = 0x0;			/* lock register access */
-}
-
-static void init_io_ports() {
-	/* disable all analog pins */
-	ANSELA = 0x0;
-	ANSELB = 0x0;
+	/* disable all analog pins except for pins 2-0 */
+	AD1PCFG = 0xFFF8;
 
 	/* configure inputs */
-	TRISASET = BIT_1;
-	TRISBSET = BIT_0 | BIT_1 | BIT_6 | BIT_7 |
-		   BIT_9 | BIT_10 | BIT_13 | BIT_15;
+	TRISBSET = 0xFFFF;
+	TRISGSET = BIT_2 | BIT_3 | BIT_6 | BIT_7;
 
 	/* configure_outputs */
-	TRISACLR = BIT_0  | BIT_2  | BIT_3  | BIT_4;
-	TRISBCLR = BIT_2 | BIT_3 | BIT_4 | BIT_5 |
-		   BIT_8 | BIT_11 | BIT_12 | BIT_14;
+	TRISCCLR = BIT_13 | BIT_14;
+	TRISDCLR = 0xFFF;
+	TRISECLR = 0xFF;
+	TRISFCLR = BIT_0 | BIT_1 | BIT_3;
+	TRISGCLR = BIT_8;
 
-	/* enable pull-ups on inputs */
-	ConfigCNAPullups(CNA1_PULLUP_ENABLE);
-	ConfigCNBPullups(CNB0_PULLUP_ENABLE | CNB1_PULLUP_ENABLE |
-			 CNB6_PULLUP_ENABLE | CNB7_PULLUP_ENABLE |
-			 CNB9_PULLUP_ENABLE | CNB10_PULLUP_ENABLE);
+	/* enable open drain on step and dir outputs*/
+	ODCESET = BIT_7 | BIT_6 | BIT_5 | BIT_4 | BIT_3 | BIT_2 | BIT_1 | BIT_0;
+	
+	/* enable open drain on all output pins */
+	ODCDSET = BIT_7 | BIT_6 | BIT_5 | BIT_4 | BIT_3 | BIT_2 | BIT_1 | BIT_0;
+	ODCDSET = BIT_11 | BIT_10 | BIT_9 | BIT_8;
+	ODCFSET = BIT_3 | BIT_1 | BIT_0;
 
 	/* data ready, active low */
 	RDY_HI;
 }
 
-static void init_spi() {
+static void init_spi()
+{
 	int i;
 
 	SPI2CON = 0;		/* stop SPI 2, set Slave mode, 8 bits, std buffer */
@@ -99,7 +88,8 @@ static void init_spi() {
 	SPI2CONSET = 1<<15;	/* start SPI 2 */
 }
 
-static void init_dma() {
+static void init_dma()
+{
 	/* open and configure the DMA channels
 	     DMA 0 is for SPI -> buffer, this is the master channel, auto enabled
 	     DMA 1 is for buffer -> SPI, this channel is chained to DMA 0 */
@@ -119,61 +109,73 @@ static void init_dma() {
 	DmaChnEnable(1);
 }
 
-/* PWM is using OC3 and Timer2 */
-static inline void configure_pwm() {
-	OC3CON = 0x0000;	/* disable OC3 */
-	OC3R = 0;		/* set output high */
+/* PWM is using OC1, OC2, OC3 and Timer2 */
+static inline void configure_pwm()
+{
+	OC1CON = 0x0000;	/* disable OCx */
+	OC2CON = 0x0000;
+	OC3CON = 0x0000;
+	OC1R = 0;		/* set output low */
+	OC2R = 0;
+	OC3R = 0;
+	OC1RS = 0;
+	OC2RS = 0;
 	OC3RS = 0;
-	OC3CON = 0x0006;	/* PWM mode, fault pin disabled */
+	OC1CON = 0x0006;	/* PWM mode, fault pin disabled */
+	OC2CON = 0x0006;
+	OC3CON = 0x0006;
 	T2CONSET = 0x0008;	/* Timer2 32 bit mode */
 	PR2 = 0x9C3F;		/* set period, 1kHz */
 	T2CONSET = 0x8000;	/* start timer */
-	OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */
+	OC1CONSET = 0x8020;	/* enable OCx in 32 bit mode */
+	OC2CONSET = 0x8020;
+	OC3CONSET = 0x8020;
 }
 
-static inline void update_pwm_period(uint32_t val) {
+static inline void update_pwm_period(uint32_t val)
+{
 	PR2 = val;
 }
 
-static inline void update_pwm_duty(uint32_t val) {
-	OC3RS = val;
+static inline void update_pwm_duty(uint32_t val1, uint32_t val2)
+{
+	OC1RS = val1 >> 16;
+	OC2RS = val1 & 0xFFFF;
+	OC3RS = val2 >> 16;
 }
 
-static inline uint32_t read_inputs() {
-	uint32_t x;
-	
-	x  = (ABORT_IN  ? 1 : 0) << 0;
-	x |= (HOLD_IN   ? 1 : 0) << 1;
-	x |= (RESUME_IN ? 1 : 0) << 2;
-	x |= (LIM_X_IN  ? 1 : 0) << 3;
-	x |= (LIM_Y_IN  ? 1 : 0) << 4;
-	x |= (LIM_Z_IN  ? 1 : 0) << 5;
-
-	return x;
+static inline uint32_t read_inputs()
+{
+	return (PORTB >> 3);
 }
 
-static inline void update_outputs(uint32_t x) {
-	if (x & (1 << 0))
-		MOTOR_EN_HI;
+static inline void update_outputs(uint32_t val) 
+{
+	LATDCLR =  PORTD_OUT_MASK & ~(val << 3);
+	LATDSET =  PORTD_OUT_MASK &  (val << 3);
+	val = val >> 9;
+	if (val && 0b100) 
+		val = 0b1000 | (val && 0b11);
 	else
-		MOTOR_EN_LO;
-
-	if (x & (1 << 1))
-		SPINDLE_EN_HI;
-	else
-		SPINDLE_EN_LO;
+		val = val && 0b11;
+	LATFCLR =  PORTF_OUT_MASK & ~(val);
+	LATFSET =  PORTF_OUT_MASK &  (val);
 }
 
-void reset_board() {
+void reset_board()
+{
 	stepgen_reset();
 	update_outputs(0);
-	update_pwm_duty(0);
+	update_pwm_duty(0,0);
 }
 
-int main(void) {
-	int spi_timeout, spi_reset = 1, i;
+int main(void)
+{
+	int spi_timeout, i;
 	unsigned long counter;
 
+	BMXCONbits.BMXARB = 0x02;
+	
 	/* Disable JTAG port so we get our I/O pins back */
 	DDPCONbits.JTAGEN = 0;
 	/* Enable optimal performance */
@@ -191,7 +193,6 @@ int main(void) {
 	INTConfigureSystem(INT_SYSTEM_CONFIG_MULT_VECTOR);
 	INTEnableInterrupts();
 
-	map_peripherals();
 	init_io_ports();
 	configure_pwm();
 	init_spi();
@@ -205,10 +206,9 @@ int main(void) {
 #if defined(ENABLE_WATCHDOG)
 	WDTCONSET = 0x8000;
 #endif
-
 	/* main loop */
 	while (1) {
-		if (!REQ_IN) { 
+		if (!REQ_IN) {
 			stepgen_get_position((void *)&txBuf[1]);
 
 			/* read inputs */
@@ -222,7 +222,7 @@ int main(void) {
 
 		if (spi_data_ready) {
 			spi_data_ready = 0;
-			
+
 			/* reset spi_timeout */
 			spi_timeout = 20000L;
 
@@ -234,7 +234,7 @@ int main(void) {
 			case 0x444D433E:	/* >CMD */
 				stepgen_update_input((const void *)&rxBuf[1]);
 				update_outputs(rxBuf[1+MAXGEN]);
-				update_pwm_duty(rxBuf[2+MAXGEN]);
+				update_pwm_duty(rxBuf[2+MAXGEN],rxBuf[3+MAXGEN]);
 				break;
 			case 0x4746433E:	/* >CFG */
 				stepgen_update_stepwidth(rxBuf[1]);
@@ -242,43 +242,31 @@ int main(void) {
 				stepgen_reset();
 				break;
 			case 0x5453543E:	/* >TST */
-				for (i=0; i<BUFSIZE; i++) 
+				for (i=0; i<BUFSIZE; i++)
 					txBuf[i] = rxBuf[i] ^ ~0;
 				break;
 			}
 		}
-		
+
 		if (DCH0INTbits.CHBCIF) {
 			DCH0INTCLR = 1<<3;
-			
+
 			/* data integrity check */
 			txBuf[0] = rxBuf[0] ^ ~0;
 			spi_data_ready = 1;
 
 			/* restart rx DMA */
 			DmaChnEnable(1);
-		} 
-
-		/* shutdown stepgen if no activity */
-		if (spi_timeout) {
-			spi_timeout--;
-			spi_reset = 1;
-		} else {
-			if (spi_reset) {
-				spi_reset = 0;
-				/* abort DMA transfer */
-				DCH0ECONSET=BIT_6;
-				DCH1ECONSET=BIT_6;
-			
-				init_spi();
-				init_dma();
-			}
-			
-			reset_board();
 		}
 
+		/* shutdown stepgen if no activity */
+		if (spi_timeout)
+			spi_timeout--;
+		else
+			reset_board();
+
 		/* blink onboard led */
-		if (!(counter++ % (spi_timeout ? 0x10000 : 0x20000))) { 
+		if (!(counter++ % (spi_timeout ? 0x10000 : 0x20000))) {
 			LED_TOGGLE;
 		}
 #if defined(ENABLE_WATCHDOG)
@@ -289,7 +277,8 @@ int main(void) {
 	return 0;
 }
 
-void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void) {
+void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void)
+{
 	/* update the period */
 	UpdateCoreTimer(CORE_TICK_RATE);
 

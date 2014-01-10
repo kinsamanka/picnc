@@ -23,7 +23,7 @@
 #define DIR_MASK	(1L<<31)
 
 #define STEPWIDTH	1
-#define MAXGEN		3
+#define MAXGEN		4
 
 #define disable_int()								\
 	do {									\

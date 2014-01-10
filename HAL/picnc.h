@@ -15,11 +15,11 @@
  *    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef PICNC_GRBL_H
-#define PICNC_GRBL_H
+#ifndef PICNC_H
+#define PICNC_H
 
-#define SPICLKDIV		32		/* ~8 Mhz */
-#define NUMAXES			3		/* X Y Z */
+#define SPICLKDIV		16		/* ~15 Mhz */
+#define NUMAXES			4		/* X Y Z A */
 
 #define REQ_TIMEOUT		10000ul
 
@@ -29,8 +29,8 @@
 #define STEPBIT			23		/* bit location in DDS accum */
 #define STEP_MASK		(1<<STEPBIT)
 
-#define BASEFREQ		80000ul		/* Base freq of the PIC stepgen in Hz */
-#define SYS_FREQ		(40000000ul)    /* 40 MHz */
+#define BASEFREQ		160000ul	/* Base freq of the PIC stepgen in Hz */
+#define SYS_FREQ		(80000000ul)    /* 80 MHz */
 
 #define PERIODFP 		((double)1.0 / (double)(BASEFREQ))
 #define VELSCALE		((double)STEP_MASK * PERIODFP)
@@ -38,6 +38,8 @@
 
 #define get_position(a)		(rxBuf[1 + (a)])
 #define get_inputs()		(rxBuf[1 + NUMAXES])
+#define set_outputs		(txBuf[1 + NUMAXES])
+#define get_adc(a)		(rxBuf[2 + NUMAXES + a])
 #define update_velocity(a, b)	(txBuf[1 + (a)] = (b))
 
 /* Broadcom defines */

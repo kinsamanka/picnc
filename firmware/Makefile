@@ -11,14 +11,14 @@ endif
 
 DEFS		+= -I. -I$(H)
 
-LDRFILE		= bare-metal_32MX150F128B.ld 
+LDRFILE		= bare-metal_32MX795F512L.ld 
 
 
 DEPFLAGS	= -MT $@ -MD -MP -MF .deps/$*.dep
 CFLAGS		= -O $(DEFS) $(DEPFLAGS)
 ASFLAGS		= $(DEFS) $(DEPFLAGS)
 
-DEVICE	= 32MX150F128B
+DEVICE	= 32MX795F512L
 
 AVRDUDE = ../mpide-0023-linux-20120903/hardware/tools/avrdude
 AVRDUDECONF = -C ../mpide-0023-linux-20120903/hardware/tools/avrdude.conf -c stk500v2 \

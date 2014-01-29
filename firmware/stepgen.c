@@ -43,34 +43,37 @@ static void dir_lo(int);
 
 static volatile int32_t position[MAXGEN] = { 0 };
 
+static volatile stepgen_input_struct stepgen_input = { {0} };
+
 static int32_t oldpos[MAXGEN] = { 0 },
         oldvel[MAXGEN] = { 0 };
 
-static int dirchange[MAXGEN] = { 0 };
+static int do_step_hi[MAXGEN] = { 1 },
+	dirchange[MAXGEN] = { 0 },
+	stepwdth[MAXGEN] = { 0 },
+	step_width = STEPWIDTH;
 
-static volatile stepgen_input_struct stepgen_input = { {0} };
-
-static int do_step_hi[MAXGEN] = { 1 };
-
-void stepgen_get_position(void *buf) {
+void stepgen_get_position(void *buf)
+{
 	disable_int();
 	memcpy(buf, (const void *)position, sizeof(position));
 	enable_int();
 }
 
-void stepgen_update_input(const void *buf) {
+void stepgen_update_input(const void *buf)
+{
 	disable_int();
 	memcpy((void *)&stepgen_input, buf, sizeof(stepgen_input));
 	enable_int();
 }
 
-static int step_width = STEPWIDTH;
-
-void stepgen_update_stepwidth(int width) {
+void stepgen_update_stepwidth(int width)
+{
 	step_width = width;
 }
 
-void stepgen_reset(void) {
+void stepgen_reset(void)
+{
 	int i;
 
 	disable_int();
@@ -92,9 +95,9 @@ void stepgen_reset(void) {
 	}
 }
 
-static int stepwdth[MAXGEN] = { 0 };
 
-void stepgen(void) {
+void stepgen(void)
+{
 	uint32_t stepready;
 	int i;
 
@@ -141,7 +144,8 @@ void stepgen(void) {
 	}
 }
 
-__inline__ void step_hi(int i) {
+__inline__ void step_hi(int i)
+{
 	if (i == 0)
 		STEP_X_HI;
 	if (i == 1)
@@ -152,7 +156,8 @@ __inline__ void step_hi(int i) {
 		STEP_A_HI;
 }
 
-__inline__ void step_lo(int i) {
+__inline__ void step_lo(int i)
+{
 	if (i == 0)
 		STEP_X_LO;
 	if (i == 1)
@@ -163,7 +168,8 @@ __inline__ void step_lo(int i) {
 		STEP_A_LO;
 }
 
-__inline__ void dir_hi(int i) {
+__inline__ void dir_hi(int i)
+{
 	if (i == 0)
 		DIR_X_HI;
 	if (i == 1)
@@ -174,7 +180,8 @@ __inline__ void dir_hi(int i) {
 		DIR_A_HI;
 }
 
-__inline__ void dir_lo(int i) {
+__inline__ void dir_lo(int i)
+{
 	if (i == 0)
 		DIR_X_LO;
 	if (i == 1)

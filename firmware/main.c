@@ -48,7 +48,8 @@
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready;
 
-static void map_peripherals() {
+static void map_peripherals()
+{
 	/* unlock PPS sequence */
 	SYSKEY = 0x0;			/* make sure it is locked */
 	SYSKEY = 0xAA996655;		/* Key 1 */
@@ -65,7 +66,8 @@ static void map_peripherals() {
 	SYSKEY = 0x0;			/* lock register access */
 }
 
-static void init_io_ports() {
+static void init_io_ports()
+{
 	/* disable all analog pins */
 	ANSELA = 0x0;
 	ANSELB = 0x0;
@@ -90,7 +92,8 @@ static void init_io_ports() {
 	RDY_HI;
 }
 
-static void init_spi() {
+static void init_spi()
+{
 	int i;
 
 	SPI2CON = 0;		/* stop SPI 2, set Slave mode, 8 bits, std buffer */
@@ -99,7 +102,8 @@ static void init_spi() {
 	SPI2CONSET = 1<<15;	/* start SPI 2 */
 }
 
-static void init_dma() {
+static void init_dma()
+{
 	/* open and configure the DMA channels
 	     DMA 0 is for SPI -> buffer, this is the master channel, auto enabled
 	     DMA 1 is for buffer -> SPI, this channel is chained to DMA 0 */
@@ -120,7 +124,8 @@ static void init_dma() {
 }
 
 /* PWM is using OC3 and Timer2 */
-static inline void configure_pwm() {
+static inline void configure_pwm()
+{
 	OC3CON = 0x0000;	/* disable OC3 */
 	OC3R = 0;		/* set output high */
 	OC3RS = 0;
@@ -131,15 +136,18 @@ static inline void configure_pwm() {
 	OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */
 }
 
-static inline void update_pwm_period(uint32_t val) {
+static inline void update_pwm_period(uint32_t val)
+{
 	PR2 = val;
 }
 
-static inline void update_pwm_duty(uint32_t val) {
+static inline void update_pwm_duty(uint32_t val)
+{
 	OC3RS = val;
 }
 
-static inline uint32_t read_inputs() {
+static inline uint32_t read_inputs()
+{
 	uint32_t x;
 	
 	x  = (ABORT_IN  ? 1 : 0) << 0;
@@ -152,7 +160,8 @@ static inline uint32_t read_inputs() {
 	return x;
 }
 
-static inline void update_outputs(uint32_t x) {
+static inline void update_outputs(uint32_t x)
+{
 	if (x & (1 << 0))
 		MOTOR_EN_HI;
 	else
@@ -164,13 +173,15 @@ static inline void update_outputs(uint32_t x) {
 		SPINDLE_EN_LO;
 }
 
-void reset_board() {
+void reset_board()
+{
 	stepgen_reset();
 	update_outputs(0);
 	update_pwm_duty(0);
 }
 
-int main(void) {
+int main(void)
+{
 	int spi_timeout, spi_reset = 1, i;
 	unsigned long counter;
 
@@ -289,7 +300,8 @@ int main(void) {
 	return 0;
 }
 
-void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void) {
+void __ISR(_CORE_TIMER_VECTOR, ipl6) CoreTimerHandler(void)
+{
 	/* update the period */
 	UpdateCoreTimer(CORE_TICK_RATE);
 

@@ -54,10 +54,17 @@ typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
 	            *position_fb[NUMAXES],
 	            *pwm_duty;
-	hal_bit_t   *motor_enable, *spindle_enable, *coolant_enable,
-	            *lim_x, *lim_y, *lim_z,
-		    *abort, *hold, *resume,
-	            *ready, *fault;
+	hal_bit_t   *motor_enable,
+		    *spindle_enable,
+		    *coolant_enable,
+	            *lim_x,
+		    *lim_y,
+		    *lim_z,
+		    *abort,
+		    *hold,
+		    *resume,
+	            *ready,
+		    *spi_fault;
 	hal_float_t scale[NUMAXES],
 	            maxaccel[NUMAXES],
 	            pwm_scale;
@@ -76,15 +83,15 @@ volatile int32_t txBuf[BUFSIZE], rxBuf[BUFSIZE];
 static u32 pwm_period = 0;
 
 static double dt = 0,				/* update_freq period in seconds */
-              recip_dt = 0,			/* reciprocal of period, avoids divides */
-              scale_inv[NUMAXES] = { 1.0 },	/* inverse of scale */
-              old_vel[NUMAXES] = { 0 },
-              old_pos[NUMAXES] = { 0 },
-              old_scale[NUMAXES] = { 0 },
-              max_vel;
+	recip_dt = 0,				/* reciprocal of period, avoids divides */
+	scale_inv[NUMAXES] = { 1.0 },		/* inverse of scale */
+	old_vel[NUMAXES] = { 0 },
+	old_pos[NUMAXES] = { 0 },
+	old_scale[NUMAXES] = { 0 },
+	max_vel;
 static long old_dtns = 0;			/* update_freq funct period in nsec */
 static s32 accum_diff = 0,
-           old_count[NUMAXES] = { 0 };
+	old_count[NUMAXES] = { 0 };
 static s64 accum[NUMAXES] = { 0 };		/* 64 bit DDS accumulator */
 
 static void read_spi(void *arg, long period);
@@ -96,7 +103,8 @@ static int map_gpio();
 static void setup_gpio();
 static void restore_gpio();
 
-int rtapi_app_main(void) {
+int rtapi_app_main(void)
+{
 	char name[HAL_NAME_LEN + 1];
 	int n, retval;
 
@@ -221,10 +229,10 @@ int rtapi_app_main(void) {
 	if (retval < 0) goto error;
 	*(data->ready) = 0;
 
-	retval = hal_pin_bit_newf(HAL_IO, &(data->fault), comp_id,
-	        "%s.fault", prefix);
+	retval = hal_pin_bit_newf(HAL_IO, &(data->spi_fault), comp_id,
+	        "%s.spi_fault", prefix);
 	if (retval < 0) goto error;
-	*(data->fault) = 0;
+	*(data->spi_fault) = 0;
 
 	retval = hal_pin_u32_newf(HAL_IN, &(data->test), comp_id,
 	        "%s.test", prefix);
@@ -271,14 +279,16 @@ error:
 	return 0;
 }
 
-void rtapi_app_exit(void) {
+void rtapi_app_exit(void)
+{
 	restore_gpio();
 	munmap((void *)gpio,BLOCK_SIZE);
 	munmap((void *)spi,BLOCK_SIZE);
 	hal_exit(comp_id);
 }
 
-static s32 debounce(s32 A){
+static s32 debounce(s32 A)
+{
 	static s32 B = 0;
 	static s32 C = 0;
 	static s32 Z = 0;
@@ -290,7 +300,8 @@ static s32 debounce(s32 A){
 	return Z;
 }
 
-static inline void update_inputs(data_t *dat) {
+static inline void update_inputs(data_t *dat)
+{
 	int i;
 	s32 x;
 	
@@ -304,7 +315,8 @@ static inline void update_inputs(data_t *dat) {
 	*(dat->lim_z)  = (x & 0b0100000) ? 1 : 0;
 }
 
-static void read_spi(void *arg, long period) {
+static void read_spi(void *arg, long period)
+{
 	int i;
 	static int startup = 0;
 	data_t *dat = (data_t *)arg;
@@ -334,7 +346,7 @@ static void read_spi(void *arg, long period) {
 		if (!startup) 
 			startup = 1;
 		else
-			*(dat->fault) = 1;
+			*(dat->spi_fault) = 1;
 	}
 
 	/* check for change in period */
@@ -370,11 +382,13 @@ static void read_spi(void *arg, long period) {
 	update_inputs(dat);
 }
 
-static void write_spi(void *arg, long period) {
+static void write_spi(void *arg, long period)
+{
 	transfer_data();
 }
 
-static inline void update_outputs(data_t *dat) {
+static inline void update_outputs(data_t *dat)
+{
 	float duty;
 	int i;
 
@@ -396,7 +410,8 @@ static inline void update_outputs(data_t *dat) {
 	txBuf[2+NUMAXES] = (duty * (1.0 + pwm_period));
 }
 
-static void update(void *arg, long period) {
+static void update(void *arg, long period)
+{
 	int i;
 	data_t *dat = (data_t *)arg;
 	double max_accl, vel_cmd, dv, new_vel,
@@ -500,7 +515,8 @@ static void update(void *arg, long period) {
 	txBuf[0] = 0x444D433E;
 }
 
-void transfer_data() {
+void transfer_data()
+{
 	char *buf;
 	int i;
 
@@ -526,7 +542,8 @@ void transfer_data() {
 	}
 }
 
-int map_gpio() {
+int map_gpio()
+{
 	int fd;
 
 	fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -582,7 +599,8 @@ int map_gpio() {
  *
  */
 
-void setup_gpio() {
+void setup_gpio()
+{
 	u32 x;
 
 	/* data ready GPIO 25, input */
@@ -625,7 +643,8 @@ void setup_gpio() {
 	BCM2835_SPICS |= SPI_CS_DONE;
 }
 
-void restore_gpio() {
+void restore_gpio()
+{
 	u32 x;
 
 	/* change all used pins back to inputs */
@@ -650,7 +669,8 @@ void restore_gpio() {
 	BCM2835_GPFSEL1 = x;
 }
 
-void reset_board() {
+void reset_board()
+{
 	u32 x,i;
 
 	/* GPIO 7 is configured as a tri-state output pin */

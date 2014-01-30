@@ -56,10 +56,9 @@ static void map_peripherals()
 	SYSKEY = 0x556699AA;		/* Key 2 */
 	CFGCONbits.IOLOCK=0;		/* now it is unlocked */
 
-	/* map SPI and PWM pins */
+	/* map SPI pins */
 	PPSInput(3, SDI2, RPB13);	/* MOSI */
-	PPSOutput(2, RPB11, SDO2);	/* MISO */
-	PPSOutput(4, RPB14, OC3);	/* PWM */
+	PPSOutput(2, RPA1, SDO2);	/* MISO */
 
 	/* lock PPS sequence */
 	CFGCONbits.IOLOCK=1;		/* now it is locked */
@@ -73,20 +72,19 @@ static void init_io_ports()
 	ANSELB = 0x0;
 
 	/* configure inputs */
-	TRISASET = BIT_1;
-	TRISBSET = BIT_0 | BIT_1 | BIT_6 | BIT_7 |
-		   BIT_9 | BIT_10 | BIT_13 | BIT_15;
+	TRISBSET = BIT_1 | BIT_5 | BIT_6 | BIT_7 |
+		   BIT_8 | BIT_9 | BIT_13 | BIT_15;
 
 	/* configure_outputs */
-	TRISACLR = BIT_0  | BIT_2  | BIT_3  | BIT_4;
-	TRISBCLR = BIT_2 | BIT_3 | BIT_4 | BIT_5 |
-		   BIT_8 | BIT_11 | BIT_12 | BIT_14;
+	TRISACLR = BIT_0 | BIT_1 | BIT_2  | BIT_3  | BIT_4;
+	TRISBCLR = BIT_0 | BIT_2 | BIT_3 | BIT_4 |
+		   BIT_10 | BIT_11 | BIT_12 | BIT_14;
 
 	/* enable pull-ups on inputs */
-	ConfigCNAPullups(CNA1_PULLUP_ENABLE);
-	ConfigCNBPullups(CNB0_PULLUP_ENABLE | CNB1_PULLUP_ENABLE |
+	ConfigCNBPullups(CNB1_PULLUP_ENABLE | CNB5_PULLUP_ENABLE |
 			 CNB6_PULLUP_ENABLE | CNB7_PULLUP_ENABLE |
-			 CNB9_PULLUP_ENABLE | CNB10_PULLUP_ENABLE);
+			 CNB8_PULLUP_ENABLE | CNB9_PULLUP_ENABLE |
+			 CNB13_PULLUP_ENABLE | CNB15_PULLUP_ENABLE);
 
 	/* data ready, active low */
 	RDY_HI;
@@ -123,61 +121,48 @@ static void init_dma()
 	DmaChnEnable(1);
 }
 
-/* PWM is using OC3 and Timer2 */
-static inline void configure_pwm()
-{
-	OC3CON = 0x0000;	/* disable OC3 */
-	OC3R = 0;		/* set output high */
-	OC3RS = 0;
-	OC3CON = 0x0006;	/* PWM mode, fault pin disabled */
-	T2CONSET = 0x0008;	/* Timer2 32 bit mode */
-	PR2 = 0x9C3F;		/* set period, 1kHz */
-	T2CONSET = 0x8000;	/* start timer */
-	OC3CONSET = 0x8020;	/* enable OC3 in 32 bit mode */
-}
-
-static inline void update_pwm_period(uint32_t val)
-{
-	PR2 = val;
-}
-
-static inline void update_pwm_duty(uint32_t val)
-{
-	OC3RS = val;
-}
-
 static inline uint32_t read_inputs()
 {
 	uint32_t x;
 	
-	x  = (ABORT_IN  ? 1 : 0) << 0;
-	x |= (HOLD_IN   ? 1 : 0) << 1;
-	x |= (RESUME_IN ? 1 : 0) << 2;
-	x |= (LIM_X_IN  ? 1 : 0) << 3;
-	x |= (LIM_Y_IN  ? 1 : 0) << 4;
-	x |= (LIM_Z_IN  ? 1 : 0) << 5;
+	x  = (INP0_IN ? 1 : 0) << 0;
+	x |= (INP1_IN ? 1 : 0) << 1;
+	x |= (INP2_IN ? 1 : 0) << 2;
+	x |= (INP3_IN ? 1 : 0) << 3;
+	x |= (INP4_IN ? 1 : 0) << 4;
 
 	return x;
 }
 
 static inline void update_outputs(uint32_t x)
 {
-	if (x & (1 << 0))
-		MOTOR_EN_HI;
-	else
-		MOTOR_EN_LO;
+	if (MAXGEN != 4) {
+		if (x & (1 << 0))
+			OUT0_HI;
+		else
+			OUT0_LO;
 
-	if (x & (1 << 1))
-		SPINDLE_EN_HI;
+		if (x & (1 << 1))
+			OUT1_HI;
+		else
+			OUT1_LO;
+	}
+
+	if (x & (1 << 2))
+		OUT2_HI;
 	else
-		SPINDLE_EN_LO;
+		OUT2_LO;
+
+	if (x & (1 << 3))
+		OUT3_HI;
+	else
+		OUT3_LO;
 }
 
 void reset_board()
 {
 	stepgen_reset();
 	update_outputs(0);
-	update_pwm_duty(0);
 }
 
 int main(void)
@@ -204,7 +189,6 @@ int main(void)
 
 	map_peripherals();
 	init_io_ports();
-	configure_pwm();
 	init_spi();
 	init_dma();
 
@@ -245,11 +229,9 @@ int main(void)
 			case 0x444D433E:	/* >CMD */
 				stepgen_update_input((const void *)&rxBuf[1]);
 				update_outputs(rxBuf[1+MAXGEN]);
-				update_pwm_duty(rxBuf[2+MAXGEN]);
 				break;
 			case 0x4746433E:	/* >CFG */
 				stepgen_update_stepwidth(rxBuf[1]);
-				update_pwm_period(rxBuf[2]);
 				stepgen_reset();
 				break;
 			case 0x5453543E:	/* >TST */

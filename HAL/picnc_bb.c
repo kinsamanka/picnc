@@ -27,7 +27,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "picnc_grbl.h"
+#include "picnc_bb.h"
 
 #if !defined(BUILD_SYS_USER_DSO)
 #error "This driver is for usermode threads only"
@@ -37,37 +37,25 @@
 #error "This driver is for the Raspberry Pi platform only"
 #endif
 
-#define MODNAME "picnc_grbl"
+#define MODNAME "picnc_bb"
 #define PREFIX "picnc"
 
 MODULE_AUTHOR("GP Orcullo");
-MODULE_DESCRIPTION("Driver for GRBL pinout compatible Raspberry Pi PICnc board");
+MODULE_DESCRIPTION("Driver for Raspberry Pi PICnc breadboard version");
 MODULE_LICENSE("GPL v2");
 
 static int stepwidth = 1;
 RTAPI_MP_INT(stepwidth, "Step width in 1/BASEFREQ");
 
-static long pwmfreq = 1000;
-RTAPI_MP_LONG(pwmfreq, "PWM frequency in Hz");
-
 typedef struct {
 	hal_float_t *position_cmd[NUMAXES],
-	            *position_fb[NUMAXES],
-	            *pwm_duty;
-	hal_bit_t   *motor_enable,
-		    *spindle_enable,
-		    *coolant_enable,
-	            *lim_x,
-		    *lim_y,
-		    *lim_z,
-		    *abort,
-		    *hold,
-		    *resume,
+	            *position_fb[NUMAXES];
+	hal_bit_t   *out[6],
+		    *inp[5],
 	            *ready,
 		    *spi_fault;
 	hal_float_t scale[NUMAXES],
-	            maxaccel[NUMAXES],
-	            pwm_scale;
+	            maxaccel[NUMAXES];
 	hal_u32_t   *test;
 } data_t;
 
@@ -80,7 +68,6 @@ static const char *prefix = PREFIX;
 volatile unsigned *gpio, *spi;
 
 volatile int32_t txBuf[BUFSIZE], rxBuf[BUFSIZE];
-static u32 pwm_period = 0;
 
 static double dt = 0,				/* update_freq period in seconds */
 	recip_dt = 0,				/* reciprocal of period, avoids divides */
@@ -134,13 +121,10 @@ int rtapi_app_main(void)
 	}
 
 	setup_gpio();
-	//reset_board();
-
-	pwm_period = (SYS_FREQ/pwmfreq) - 1;	/* PeripheralClock/pwmfreq - 1 */
+	reset_board();
 
 	txBuf[0] = 0x4746433E;			/* this is config data (>CFG) */
 	txBuf[1] = stepwidth;
-	txBuf[2] = pwm_period;
 	transfer_data();			/* send config data */
 
 	max_vel = BASEFREQ/(4.0 * stepwidth);	/* calculate velocity limit */
@@ -168,61 +152,19 @@ int rtapi_app_main(void)
 		data->maxaccel[n] = 1.0;
 	}
 
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->lim_x), comp_id,
-	        "%s.axis.0.limit", prefix);
-	if (retval < 0) goto error;
-	*(data->lim_x) = 0;
+	for (n=0; n<5; n++) {
+		retval = hal_pin_bit_newf(HAL_OUT, &(data->inp[n]), comp_id,
+			"%s.input.%01d.pin", prefix, n);
+		if (retval < 0) goto error;
+		*(data->inp[n]) = 0;
+	}
 
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->lim_y), comp_id,
-	        "%s.axis.1.limit", prefix);
-	if (retval < 0) goto error;
-	*(data->lim_y) = 0;
-
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->lim_z), comp_id,
-	        "%s.axis.2.limit", prefix);
-	if (retval < 0) goto error;
-	*(data->lim_z) = 0;
-
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->abort), comp_id,
-	        "%s.in.abort", prefix);
-	if (retval < 0) goto error;
-	*(data->abort) = 0;
-
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->hold), comp_id,
-	        "%s.in.hold", prefix);
-	if (retval < 0) goto error;
-	*(data->hold) = 0;
-
-	retval = hal_pin_bit_newf(HAL_OUT, &(data->resume), comp_id,
-	        "%s.in.resume", prefix);
-	if (retval < 0) goto error;
-	*(data->resume) = 0;
-
-	retval = hal_pin_bit_newf(HAL_IN, &(data->motor_enable), comp_id,
-	        "%s.motor.enable", prefix);
-	if (retval < 0) goto error;
-	*(data->motor_enable) = 0;
-
-	retval = hal_pin_bit_newf(HAL_IN, &(data->coolant_enable), comp_id,
-	        "%s.coolant.enable", prefix);
-	if (retval < 0) goto error;
-	*(data->coolant_enable) = 0;
-
-	retval = hal_pin_bit_newf(HAL_IN, &(data->spindle_enable), comp_id,
-	        "%s.spindle.enable", prefix);
-	if (retval < 0) goto error;
-	*(data->spindle_enable) = 0;
-
-	retval = hal_pin_float_newf(HAL_IN, &(data->pwm_duty),
-		comp_id, "%s.spindle_pwm.duty", prefix, n);
-	if (retval < 0) goto error;
-	*(data->pwm_duty) = 0.0;
-
-	retval = hal_param_float_newf(HAL_RW, &(data->pwm_scale),
-		comp_id,"%s.spindle_pwm.scale", prefix);
-	if (retval < 0) goto error;
-	data->pwm_scale = 1.0;
-
+	for (n=0; n<6; n++) {
+		retval = hal_pin_bit_newf(HAL_IN, &(data->out[n]), comp_id,
+			"%s.output.%01d.pin", prefix, n);
+		if (retval < 0) goto error;
+		*(data->out[n]) = 0;
+	}
 
 	retval = hal_pin_bit_newf(HAL_OUT, &(data->ready), comp_id,
 	        "%s.ready", prefix);
@@ -302,17 +244,13 @@ static s32 debounce(s32 A)
 
 static inline void update_inputs(data_t *dat)
 {
-	int i;
+	int n;
 	s32 x;
 	
 	x = debounce(get_inputs());
 	
-	*(dat->abort)  = (x & 0b0000001) ? 1 : 0;
-	*(dat->hold)   = (x & 0b0000010) ? 1 : 0;
-	*(dat->resume) = (x & 0b0000100) ? 1 : 0;
-	*(dat->lim_x)  = (x & 0b0001000) ? 1 : 0;
-	*(dat->lim_y)  = (x & 0b0010000) ? 1 : 0;
-	*(dat->lim_z)  = (x & 0b0100000) ? 1 : 0;
+	for (n=0; n<5; n++)
+		*(dat->inp[n])  = (x & (1l << n)) ? 1 : 0;
 }
 
 static void read_spi(void *arg, long period)
@@ -326,15 +264,15 @@ static void read_spi(void *arg, long period)
 	txBuf[0] = 0x444D4300;
 
 	/* send request */
-	BCM2835_GPCLR0 = (1l << 7);
+	BCM2835_GPCLR0 = (1l << 14);
 
 	/* wait until ready, signal active low */
-	while ((BCM2835_GPLEV0 & (1l << 25)) && (timeout--));
+	while ((BCM2835_GPLEV0 & (1l << 15)) && (timeout--));
 	
 	*(dat->test) = timeout;
 
 	/* clear request, active low */
-	BCM2835_GPSET0 = (1l << 7);
+	BCM2835_GPSET0 = (1l << 14);
 
 	if (timeout) transfer_data();
 
@@ -389,25 +327,25 @@ static void write_spi(void *arg, long period)
 
 static inline void update_outputs(data_t *dat)
 {
-	float duty;
-	int i;
+	int n;
+	s32 y;
 
 	/* update pic32 output */
-	txBuf[1 + NUMAXES] = (*(dat->motor_enable) ? 1l : 0) << 0 |
-				(*(dat->spindle_enable) ? 1l : 0) << 1 ;
+	for (n = 0, y = 0; n < 4; n++)
+		y |= (*(dat->out[n]) ? 1l : 0) << n;
+	
+	txBuf[1 + NUMAXES] = y ;
 
 	/* update RPi GPIO */
-	if (*(dat->coolant_enable))
-		BCM2835_GPSET0 = (1l << 8);
+	if (*(dat->out[4]))
+		BCM2835_GPSET0 = (1l << 23);
 	else
-		BCM2835_GPCLR0 = (1l << 8);
+		BCM2835_GPCLR0 = (1l << 23);
 
-	/* update pwm */
-	duty = *(dat->pwm_duty) * dat->pwm_scale * 0.01;
-	if (duty < 0.0) duty = 0.0;
-	if (duty > 1.0) duty = 1.0;
-
-	txBuf[2+NUMAXES] = (duty * (1.0 + pwm_period));
+	if (*(dat->out[5]))
+		BCM2835_GPSET0 = (1l << 24);
+	else
+		BCM2835_GPCLR0 = (1l << 24);
 }
 
 static void update(void *arg, long period)
@@ -590,12 +528,14 @@ int map_gpio()
  *
  *	GPIO	Dir	Signal		Note
  *
- *	25	IN	DATA READY	active low
  *	9	IN	MISO		SPI
- *	7	OUT	DATA REQUEST	active low
+ *	15	IN	DATA READY	active low
+ *	7	OUT	RESET		hi-Z
  *	10	OUT	MOSI		SPI
  *	11	OUT	SCLK		SPI
- *	8	OUT	COOLANT_EN	active high
+ *	14	OUT	DATA REQUEST	active low
+ *	23	OUT	OUTPUT 0	active high
+ *	24	OUT	OUTPUT 1	active high
  *
  */
 
@@ -603,22 +543,27 @@ void setup_gpio()
 {
 	u32 x;
 
-	/* data ready GPIO 25, input */
-	x = BCM2835_GPFSEL2;
+	/* data ready GPIO 15, input */
+	x = BCM2835_GPFSEL1;
 	x &= ~(0b111 << (5*3));
-	BCM2835_GPFSEL2 = x;
+	BCM2835_GPFSEL1 = x;
 
-	/* data request GPIO 7, output */
+	/* data request GPIO 14, output */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (4*3));
+	x |= (0b001 << (4*3));
+	BCM2835_GPFSEL1 = x;
+
+	/* reset GPIO 7, tri-state, hi-Z */
 	x = BCM2835_GPFSEL0;
 	x &= ~(0b111 << (7*3));
-	x |= (0b001 << (7*3));
 	BCM2835_GPFSEL0 = x;
 
-	/* COOLANT_EN GPIO 8 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (8*3));		
-	x |= (0b001 << (8*3));
-	BCM2835_GPFSEL0 = x;
+	/* OUTPUTS GPIO 23 24 */
+	x = BCM2835_GPFSEL2;
+	x &= ~(0b111 << (3*3) | 0b111 << (4*3));		
+	x |= (0b001 << (3*3) | 0b001 << (4*3));
+	BCM2835_GPFSEL2 = x;
 
 	/* change SPI pins */
 	x = BCM2835_GPFSEL0;
@@ -654,14 +599,19 @@ void restore_gpio()
 	x &= ~(0b111 << (7*3));
 	BCM2835_GPFSEL0 = x;
 
-	/* GPIO 25 */
+	/* GPIO 14 */
+	x = BCM2835_GPFSEL1;
+	x &= ~(0b111 << (4*3));
+	BCM2835_GPFSEL1 = x;
+
+	/* GPIO 23 24 */
 	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (5*3));
+	x &= ~(0b111 << (3*3) | 0b111 << (4*3));
 	BCM2835_GPFSEL2 = x;
 
 	/* change SPI pins to inputs*/
 	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (8*3) | 0b111 << (9*3));
+	x &= ~(0b111 << (9*3));
 	BCM2835_GPFSEL0 = x;
 
 	x = BCM2835_GPFSEL1;

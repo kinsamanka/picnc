@@ -15,8 +15,8 @@
  *    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
 
-#ifndef PICNC_GRBL_H
-#define PICNC_GRBL_H
+#ifndef PICNC_BB_H
+#define PICNC_BB_H
 
 #define SPICLKDIV		32		/* ~8 Mhz */
 #define NUMAXES			3		/* X Y Z */

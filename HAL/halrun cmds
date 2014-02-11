@@ -1,0 +1,13 @@
+loadrt threads name1=test period1=1000000
+loadrt picnc_bb
+
+setp picnc.axis.0.scale 100
+setp picnc.axis.0.maxaccel 10
+
+addf picnc.read test
+addf picnc.update test
+addf picnc.write test
+start
+loadusr halmeter
+# monitor spi.0.position-fb
+setp picnc.axis.0.position-cmd 1000

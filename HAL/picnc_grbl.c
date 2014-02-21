@@ -97,8 +97,10 @@ static s64 accum[NUMAXES] = { 0 };		/* 64 bit DDS accumulator */
 static void read_spi(void *arg, long period);
 static void write_spi(void *arg, long period);
 static void update(void *arg, long period);
-void transfer_data();
-static void reset_board();
+static void update_outputs(data_t *dat);
+static void update_inputs(data_t *dat);
+static void read_buf();
+static void write_buf();
 static int map_gpio();
 static void setup_gpio();
 static void restore_gpio();
@@ -134,14 +136,13 @@ int rtapi_app_main(void)
 	}
 
 	setup_gpio();
-	//reset_board();
 
 	pwm_period = (SYS_FREQ/pwmfreq) - 1;	/* PeripheralClock/pwmfreq - 1 */
 
 	txBuf[0] = 0x4746433E;			/* this is config data (>CFG) */
 	txBuf[1] = stepwidth;
 	txBuf[2] = pwm_period;
-	transfer_data();			/* send config data */
+	write_buf();			/* send config data */
 
 	max_vel = BASEFREQ/(4.0 * stepwidth);	/* calculate velocity limit */
 
@@ -287,67 +288,22 @@ void rtapi_app_exit(void)
 	hal_exit(comp_id);
 }
 
-static s32 debounce(s32 A)
-{
-	static s32 B = 0;
-	static s32 C = 0;
-	static s32 Z = 0;
-
-	Z = (Z & (A | B | C)) | (A & B & C);
-	C = B;
-	B = A;
-		
-	return Z;
-}
-
-static inline void update_inputs(data_t *dat)
-{
-	int i;
-	s32 x;
-	
-	x = debounce(get_inputs());
-	
-	*(dat->abort)  = (x & 0b0000001) ? 1 : 0;
-	*(dat->hold)   = (x & 0b0000010) ? 1 : 0;
-	*(dat->resume) = (x & 0b0000100) ? 1 : 0;
-	*(dat->lim_x)  = (x & 0b0001000) ? 1 : 0;
-	*(dat->lim_y)  = (x & 0b0010000) ? 1 : 0;
-	*(dat->lim_z)  = (x & 0b0100000) ? 1 : 0;
-}
-
-static void read_spi(void *arg, long period)
+void read_spi(void *arg, long period)
 {
 	int i;
 	static int startup = 0;
 	data_t *dat = (data_t *)arg;
-	unsigned long timeout = REQ_TIMEOUT;
 
-	/* skip loading velocity command */
-	txBuf[0] = 0x444D4300;
+	read_buf();
+	/* update input status */
+	update_inputs(dat);
+	*(dat->test) = rxBuf[2];
 
-	/* send request */
-	BCM2835_GPCLR0 = (1l << 7);
+	/* command >CM2 */
+	txBuf[0] = 0x324D433E;
+	update_outputs(dat);
 
-	/* wait until ready, signal active low */
-	while ((BCM2835_GPLEV0 & (1l << 25)) && (timeout--));
-	
-	*(dat->test) = timeout;
-
-	/* clear request, active low */
-	BCM2835_GPSET0 = (1l << 7);
-
-	if (timeout) transfer_data();
-
-	/* sanity check */
-	if (rxBuf[0] == (0x444D433E ^ ~0)) {
-		*(dat->ready) = 1;
-	} else {
-		*(dat->ready) = 0;
-		if (!startup) 
-			startup = 1;
-		else
-			*(dat->spi_fault) = 1;
-	}
+	write_buf();
 
 	/* check for change in period */
 	if (period != old_dtns) {
@@ -367,6 +323,19 @@ static void read_spi(void *arg, long period)
 		}
 	}
 
+	read_buf();
+
+	/* sanity check */
+	if (rxBuf[0] == (0x314D433E ^ ~0)) {
+		*(dat->ready) = 1;
+	} else {
+		*(dat->ready) = 0;
+		if (!startup)
+			startup = 1;
+		else
+			*(dat->spi_fault) = 1;
+	}
+
 	/* update outputs */
 	for (i = 0; i < NUMAXES; i++) {
 		/* the DDS uses 32 bit counter, this code converts
@@ -377,40 +346,14 @@ static void read_spi(void *arg, long period)
 
 		*(dat->position_fb[i]) = (float)(accum[i]) * scale_inv[i];
 	}
-
-	/* update input status */
-	update_inputs(dat);
 }
 
-static void write_spi(void *arg, long period)
+void write_spi(void *arg, long period)
 {
-	transfer_data();
+	write_buf();
 }
 
-static inline void update_outputs(data_t *dat)
-{
-	float duty;
-	int i;
-
-	/* update pic32 output */
-	txBuf[1 + NUMAXES] = (*(dat->motor_enable) ? 1l : 0) << 0 |
-				(*(dat->spindle_enable) ? 1l : 0) << 1 ;
-
-	/* update RPi GPIO */
-	if (*(dat->coolant_enable))
-		BCM2835_GPSET0 = (1l << 8);
-	else
-		BCM2835_GPCLR0 = (1l << 8);
-
-	/* update pwm */
-	duty = *(dat->pwm_duty) * dat->pwm_scale * 0.01;
-	if (duty < 0.0) duty = 0.0;
-	if (duty > 1.0) duty = 1.0;
-
-	txBuf[2+NUMAXES] = (duty * (1.0 + pwm_period));
-}
-
-static void update(void *arg, long period)
+void update(void *arg, long period)
 {
 	int i;
 	data_t *dat = (data_t *)arg;
@@ -509,36 +452,80 @@ static void update(void *arg, long period)
 		update_velocity(i, (new_vel * VELSCALE));
 	}
 
-	update_outputs(dat);
-
-	/* this is a command (>CMD) */
-	txBuf[0] = 0x444D433E;
+	/* this is a command (>CM1) */
+	txBuf[0] = 0x314D433E;
 }
 
-void transfer_data()
+void update_outputs(data_t *dat)
+{
+	float duty;
+	int i;
+
+	/* update pic32 output */
+	txBuf[1]  = (*(dat->motor_enable) ? 1l : 0) << 0;
+	txBuf[1] |= (*(dat->spindle_enable) ? 1l : 0) << 1;
+	txBuf[1] |= (*(dat->coolant_enable) ? 1l : 0) << 2;
+
+	/* update pwm */
+	duty = *(dat->pwm_duty) * dat->pwm_scale * 0.01;
+	if (duty < 0.0) duty = 0.0;
+	if (duty > 1.0) duty = 1.0;
+
+	txBuf[2] = (duty * (1.0 + pwm_period));
+}
+
+static s32 debounce(s32 A)
+{
+	static s32 B = 0;
+	static s32 C = 0;
+	static s32 Z = 0;
+
+	Z = (Z & (A | B | C)) | (A & B & C);
+	C = B;
+	B = A;
+
+	return Z;
+}
+
+void update_inputs(data_t *dat)
+{
+	int i;
+	s32 x;
+
+	x = debounce(rxBuf[1]);
+
+	*(dat->abort)  = (x & 0b0000001) ? 1 : 0;
+	*(dat->hold)   = (x & 0b0000010) ? 1 : 0;
+	*(dat->resume) = (x & 0b0000100) ? 1 : 0;
+	*(dat->lim_x)  = (x & 0b0001000) ? 1 : 0;
+	*(dat->lim_y)  = (x & 0b0010000) ? 1 : 0;
+	*(dat->lim_z)  = (x & 0b0100000) ? 1 : 0;
+}
+
+void read_buf()
 {
 	char *buf;
 	int i;
 
-	/* activate transfer */
-	BCM2835_SPICS = SPI_CS_TA;
-	
-	/* send txBuf */
-	buf = (char *)txBuf;
-	for (i=0; i<SPIBUFSIZE; i++) {
-		BCM2835_SPIFIFO = *buf++;
-	}
-	
 	/* wait until transfer is finished */
 	while (!(BCM2835_SPICS & SPI_CS_DONE));
-
-	/* clear DONE bit */
-	BCM2835_SPICS = SPI_CS_DONE;
 
 	/* read buffer */
 	buf = (char *)rxBuf;
 	for (i=0; i<SPIBUFSIZE; i++) {
 		*buf++ = BCM2835_SPIFIFO;
+	}
+}
+
+void write_buf()
+{
+	char *buf;
+	int i;
+
+	/* send txBuf */
+	buf = (char *)txBuf;
+	for (i=0; i<SPIBUFSIZE; i++) {
+		BCM2835_SPIFIFO = *buf++;
 	}
 }
 
@@ -590,12 +577,9 @@ int map_gpio()
  *
  *	GPIO	Dir	Signal		Note
  *
- *	25	IN	DATA READY	active low
  *	9	IN	MISO		SPI
- *	7	OUT	DATA REQUEST	active low
  *	10	OUT	MOSI		SPI
  *	11	OUT	SCLK		SPI
- *	8	OUT	COOLANT_EN	active high
  *
  */
 
@@ -603,27 +587,10 @@ void setup_gpio()
 {
 	u32 x;
 
-	/* data ready GPIO 25, input */
-	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (5*3));
-	BCM2835_GPFSEL2 = x;
-
-	/* data request GPIO 7, output */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	x |= (0b001 << (7*3));
-	BCM2835_GPFSEL0 = x;
-
-	/* COOLANT_EN GPIO 8 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (8*3));		
-	x |= (0b001 << (8*3));
-	BCM2835_GPFSEL0 = x;
-
 	/* change SPI pins */
 	x = BCM2835_GPFSEL0;
 	x &= ~(0b111 << (9*3));
-	x |=   (0b100 << (9*3));
+	x |= (0b100 << (9*3));
 	BCM2835_GPFSEL0 = x;
 
 	x = BCM2835_GPFSEL1;
@@ -639,25 +606,13 @@ void setup_gpio()
 	/* clear FIFOs */
 	BCM2835_SPICS |= SPI_CS_CLEAR_RX | SPI_CS_CLEAR_TX;
 
-	/* clear done bit */
-	BCM2835_SPICS |= SPI_CS_DONE;
+	/* activate transfer */
+	BCM2835_SPICS = SPI_CS_TA;
 }
 
 void restore_gpio()
 {
 	u32 x;
-
-	/* change all used pins back to inputs */
-
-	/* GPIO 7 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	BCM2835_GPFSEL0 = x;
-
-	/* GPIO 25 */
-	x = BCM2835_GPFSEL2;
-	x &= ~(0b111 << (5*3));
-	BCM2835_GPFSEL2 = x;
 
 	/* change SPI pins to inputs*/
 	x = BCM2835_GPFSEL0;
@@ -669,28 +624,3 @@ void restore_gpio()
 	BCM2835_GPFSEL1 = x;
 }
 
-void reset_board()
-{
-	u32 x,i;
-
-	/* GPIO 7 is configured as a tri-state output pin */
-
-	/* set as output GPIO 7 */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	x |= (0b001 << (7*3));
-	BCM2835_GPFSEL0 = x;
-
-	/* board reset is active low */
-	for (i=0; i<0x10000; i++)
-		BCM2835_GPCLR0 = (1l << 7);
-
-	/* wait until the board is ready */
-	for (i=0; i<0x300000; i++)
-		BCM2835_GPSET0 = (1l << 7);
-
-	/* reset GPIO 7 back to input */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (7*3));
-	BCM2835_GPFSEL0 = x;
-}

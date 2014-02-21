@@ -23,8 +23,8 @@
 
 #pragma config POSCMOD = OFF		/* Primary Oscillator disabled */
 #pragma config FNOSC = FRCPLL		/* Fast RC Osc w/Div-by-N */
-#pragma config FPLLODIV = DIV_2		/* PLL configured for 40MHz clock */
-#pragma config FPLLMUL = MUL_20
+#pragma config FPLLODIV = DIV_2		/* PLL configured for 48MHz clock */
+#pragma config FPLLMUL = MUL_24
 #pragma config FPLLIDIV = DIV_2
 #pragma config FPBDIV = DIV_1		/* Peripheral Clock Divisor */
 #pragma config IESO = ON		/* Internal/External Switch Over disabled */
@@ -37,13 +37,9 @@
 
 #define BASEFREQ			80000
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
-#define CORE_DIVIDER			(BASEFREQ/CLOCK_CONF_SECOND)
-
-#define SPIBUFSIZE			32	/* BCM2835 SPI buffer size for 
-						   PIC32MX150F128B */
+#define SPIBUFSIZE			20
 #define BUFSIZE				(SPIBUFSIZE/4)
-
-#define ENABLE_WATCHDOG
+#define UPDATE_CYCLE			300
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready;
@@ -75,21 +71,18 @@ static void init_io_ports()
 	/* configure inputs */
 	TRISASET = BIT_1;
 	TRISBSET = BIT_0 | BIT_1 | BIT_6 | BIT_7 |
-		   BIT_9 | BIT_10 | BIT_13 | BIT_15;
+		   BIT_10 | BIT_13 | BIT_15;
 
 	/* configure_outputs */
 	TRISACLR = BIT_0  | BIT_2  | BIT_3  | BIT_4;
-	TRISBCLR = BIT_2 | BIT_3 | BIT_4 | BIT_5 |
-		   BIT_8 | BIT_11 | BIT_12 | BIT_14;
+	TRISBCLR = BIT_2 | BIT_3 | BIT_4 | BIT_5 | BIT_8 |
+		   BIT_9 | BIT_11 | BIT_12 | BIT_14;
 
 	/* enable pull-ups on inputs */
 	ConfigCNAPullups(CNA1_PULLUP_ENABLE);
 	ConfigCNBPullups(CNB0_PULLUP_ENABLE | CNB1_PULLUP_ENABLE |
 			 CNB6_PULLUP_ENABLE | CNB7_PULLUP_ENABLE |
-			 CNB9_PULLUP_ENABLE | CNB10_PULLUP_ENABLE);
-
-	/* data ready, active low */
-	RDY_HI;
+			 CNB10_PULLUP_ENABLE);
 }
 
 static void init_spi()
@@ -105,12 +98,12 @@ static void init_spi()
 static void init_dma()
 {
 	/* open and configure the DMA channels
-	     DMA 0 is for SPI -> buffer, this is the master channel, auto enabled
-	     DMA 1 is for buffer -> SPI, this channel is chained to DMA 0 */
+	     DMA 0 is for SPI -> buffer
+	     DMA 1 is for buffer -> SPI */
 	DmaChnOpen(DMA_CHANNEL0, DMA_CHN_PRI3, DMA_OPEN_AUTO);
-	DmaChnOpen(DMA_CHANNEL1, DMA_CHN_PRI0, DMA_OPEN_DEFAULT);
+	DmaChnOpen(DMA_CHANNEL1, DMA_CHN_PRI3, DMA_OPEN_AUTO);
 
-	/* DMA channels trigger on SPI RX, buffer not empty signal */
+	/* DMA channels trigger on SPI RX/TX */
 	DmaChnSetEventControl(DMA_CHANNEL0, DMA_EV_START_IRQ(_SPI2_RX_IRQ));
 	DmaChnSetEventControl(DMA_CHANNEL1, DMA_EV_START_IRQ(_SPI2_TX_IRQ));
 
@@ -149,7 +142,7 @@ static inline void update_pwm_duty(uint32_t val)
 static inline uint32_t read_inputs()
 {
 	uint32_t x;
-	
+
 	x  = (ABORT_IN  ? 1 : 0) << 0;
 	x |= (HOLD_IN   ? 1 : 0) << 1;
 	x |= (RESUME_IN ? 1 : 0) << 2;
@@ -171,6 +164,11 @@ static inline void update_outputs(uint32_t x)
 		SPINDLE_EN_HI;
 	else
 		SPINDLE_EN_LO;
+
+	if (x & (1 << 2))
+		COOLANT_EN_HI;
+	else
+		COOLANT_EN_LO;
 }
 
 void reset_board()
@@ -182,7 +180,7 @@ void reset_board()
 
 int main(void)
 {
-	int spi_timeout, spi_reset = 1, i;
+	int i, j, spi_timeout, spi_reset, cycles;
 	unsigned long counter;
 
 	/* Disable JTAG port so we get our I/O pins back */
@@ -212,28 +210,21 @@ int main(void)
 	spi_data_ready = 0;
 	spi_timeout = 20000L;
 	counter = 0;
+	spi_reset = 1;
+	cycles = 0;
+	j = 0;
 
-#if defined(ENABLE_WATCHDOG)
+	/* enable watchdog */
 	WDTCONSET = 0x8000;
-#endif
 
 	/* main loop */
 	while (1) {
-		if (!REQ_IN) { 
+		if (cycles++ == UPDATE_CYCLE)
 			stepgen_get_position((void *)&txBuf[1]);
-
-			/* read inputs */
-			txBuf[1+MAXGEN] = read_inputs();
-
-			/* the ready line is active low */
-			RDY_LO;
-		} else {
-			RDY_HI;
-		}
 
 		if (spi_data_ready) {
 			spi_data_ready = 0;
-			
+
 			/* reset spi_timeout */
 			spi_timeout = 20000L;
 
@@ -242,10 +233,16 @@ int main(void)
 			case 0x5453523E:	/* >RST */
 				reset_board();
 				break;
-			case 0x444D433E:	/* >CMD */
+			case 0x314D433E:	/* >CM1 */
 				stepgen_update_input((const void *)&rxBuf[1]);
-				update_outputs(rxBuf[1+MAXGEN]);
-				update_pwm_duty(rxBuf[2+MAXGEN]);
+				j = cycles;
+				cycles = 0;	/* start wait cycle for position update */ 
+				break;
+			case 0x324D433E:	/* >CM2 */
+				update_outputs(rxBuf[1]);
+				update_pwm_duty(rxBuf[2]);
+				txBuf[1] = read_inputs();
+				txBuf[2] = j;
 				break;
 			case 0x4746433E:	/* >CFG */
 				stepgen_update_stepwidth(rxBuf[1]);
@@ -253,49 +250,38 @@ int main(void)
 				stepgen_reset();
 				break;
 			case 0x5453543E:	/* >TST */
-				for (i=0; i<BUFSIZE; i++) 
+				for (i=0; i<BUFSIZE; i++)
 					txBuf[i] = rxBuf[i] ^ ~0;
 				break;
 			}
 		}
-		
-		if (DCH0INTbits.CHBCIF) {
-			DCH0INTCLR = 1<<3;
-			
-			/* data integrity check */
-			txBuf[0] = rxBuf[0] ^ ~0;
-			spi_data_ready = 1;
 
-			/* restart rx DMA */
-			DmaChnEnable(1);
-		} 
+		/* if rx buffer is half-full */
+		if (DCH0INTbits.CHDHIF) {
+			DCH0INTCLR = 1<<4;		/* clear flag */
+			txBuf[0] = rxBuf[0] ^ ~0;	/* data integrity check */
+		}
+
+		/* if rx buffer is full */
+		if (DCH0INTbits.CHBCIF) {
+			DCH0INTCLR = 1<<3;		/* clear flag */
+			spi_data_ready = 1;
+		}
 
 		/* shutdown stepgen if no activity */
-		if (spi_timeout) {
+		if (spi_timeout)
 			spi_timeout--;
-			spi_reset = 1;
-		} else {
-			if (spi_reset) {
-				spi_reset = 0;
-				/* abort DMA transfer */
-				DCH0ECONSET=BIT_6;
-				DCH1ECONSET=BIT_6;
-			
-				init_spi();
-				init_dma();
-			}
-			
+		else
 			reset_board();
-		}
 
 		/* blink onboard led */
-		if (!(counter++ % (spi_timeout ? 0x10000 : 0x20000))) { 
+		if (!(counter++ % (spi_timeout ? 0x10000 : 0x20000))) {
 			LED_TOGGLE;
 		}
-#if defined(ENABLE_WATCHDOG)
-		/* keep alive */
-		WDTCONSET = 0x01;
-#endif
+
+		/* keep alive only if spi is active */
+		if (spi_data_ready)
+			WDTCONSET = 0x01;
 	}
 	return 0;
 }

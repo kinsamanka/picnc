@@ -18,7 +18,7 @@
 #ifndef __HARDWARE_H__
 #define __HARDWARE_H__
 
-#define SYS_FREQ		(40000000ul)    /* 40 MHz */
+#define SYS_FREQ		(48000000ul)    /* 48 MHz */
 #define GetSystemClock()	(SYS_FREQ)
 #define	GetPeripheralClock()	(GetSystemClock())
 #define	GetInstructionClock()	(GetSystemClock())
@@ -37,7 +37,8 @@
  *	7	RB3	OUT	STEP_Y
  *	11	RB4	OUT	DIR_Y
  *	14	RB5	OUT	MOTORS_ENABLE
- *	17	RB8	OUT	DATA READY
+ *	17	RB8	OUT	COOLANT_ENABLE
+ *	18	RB9	OUT	TESTPIN
  *	22	RB11	OUT	MISO
  *	23	RB12	OUT	SPINDLE_ENABLE
  *	25	RB14	OUT	SPINDLE_PWM
@@ -47,17 +48,14 @@
  *	5	RB1	IN	RESUME
  *	15	RB6	IN	LIM_X
  *	16	RB7	IN	LIM_Y
- *	18	RB9	IN	DATA REQUEST
  *	21	RB10	IN	LIM_Z
  *	24	RB13	IN	MOSI
- *	26	RB15	IN	SCLK 
+ *	26	RB15	IN	SCLK
  *
  */
 
 #define LED_TOGGLE		(LATAINV = BIT_0)
 #define REQ_IN			(PORTBbits.RB9)
-#define RDY_LO			(LATBCLR = BIT_8)
-#define RDY_HI			(LATBSET = BIT_8)
 
 #define ABORT_IN		(PORTAbits.RA1)
 #define HOLD_IN			(PORTBbits.RB0)
@@ -70,6 +68,11 @@
 #define MOTOR_EN_HI		(LATBSET = BIT_5)
 #define SPINDLE_EN_LO		(LATBCLR = BIT_12)
 #define SPINDLE_EN_HI		(LATBSET = BIT_12)
+#define COOLANT_EN_LO		(LATBCLR = BIT_8)
+#define COOLANT_EN_HI		(LATBSET = BIT_8)
+#define TEST_LO			(LATBCLR = BIT_9)
+#define TEST_HI			(LATBSET = BIT_9)
+#define TEST_TOGGLE		(LATBINV = BIT_9)
 
 #define STEP_X_LO		(LATBCLR = BIT_2)
 #define STEP_X_HI		(LATBSET = BIT_2)

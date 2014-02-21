@@ -23,21 +23,20 @@
 
 #define REQ_TIMEOUT		10000ul
 
-#define SPIBUFSIZE		32		/* SPI buffer size */
+#define SPIBUFSIZE		20		/* SPI buffer size */
 #define BUFSIZE			(SPIBUFSIZE/4)
 
 #define STEPBIT			23		/* bit location in DDS accum */
 #define STEP_MASK		(1<<STEPBIT)
 
 #define BASEFREQ		80000ul		/* Base freq of the PIC stepgen in Hz */
-#define SYS_FREQ		(40000000ul)    /* 40 MHz */
+#define SYS_FREQ		(48000000ul)    /* 48 MHz */
 
 #define PERIODFP 		((double)1.0 / (double)(BASEFREQ))
 #define VELSCALE		((double)STEP_MASK * PERIODFP)
 #define ACCELSCALE		(VELSCALE * PERIODFP)
 
 #define get_position(a)		(rxBuf[1 + (a)])
-#define get_inputs()		(rxBuf[1 + NUMAXES])
 #define update_velocity(a, b)	(txBuf[1 + (a)] = (b))
 
 /* Broadcom defines */

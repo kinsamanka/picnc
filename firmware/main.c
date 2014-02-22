@@ -40,6 +40,7 @@
 #define SPIBUFSIZE			20
 #define BUFSIZE				(SPIBUFSIZE/4)
 #define UPDATE_CYCLE			300
+#define SPI_TIMEOUT			1000L
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
 static volatile int spi_data_ready;
@@ -180,7 +181,7 @@ void reset_board()
 
 int main(void)
 {
-	int i, j, spi_timeout, spi_reset, cycles;
+	int i, j, spi_timeout, cycles;
 	unsigned long counter;
 
 	/* Disable JTAG port so we get our I/O pins back */
@@ -206,11 +207,13 @@ int main(void)
 	init_spi();
 	init_dma();
 
+	/* wait until tx buffer is filled up */
+	while (!SPI2STATbits.SPITBF);
+
 	reset_board();
 	spi_data_ready = 0;
-	spi_timeout = 20000L;
+	spi_timeout = 0;
 	counter = 0;
-	spi_reset = 1;
 	cycles = 0;
 	j = 0;
 
@@ -219,16 +222,15 @@ int main(void)
 
 	/* main loop */
 	while (1) {
+		/* counting starts after >CM1 command
+		   data is sent when >CM2 command is received */
 		if (cycles++ == UPDATE_CYCLE)
 			stepgen_get_position((void *)&txBuf[1]);
 
 		if (spi_data_ready) {
 			spi_data_ready = 0;
 
-			/* reset spi_timeout */
-			spi_timeout = 20000L;
-
-			/* the first byte received is a command byte */
+			/* the first element received is a command string */
 			switch (rxBuf[0]) {
 			case 0x5453523E:	/* >RST */
 				reset_board();
@@ -256,32 +258,46 @@ int main(void)
 			}
 		}
 
-		/* if rx buffer is half-full */
+		/* if rx buffer is half-full, update the integrity check.
+		   There isn't enough time if we wait for complete transfer */
 		if (DCH0INTbits.CHDHIF) {
 			DCH0INTCLR = 1<<4;		/* clear flag */
-			txBuf[0] = rxBuf[0] ^ ~0;	/* data integrity check */
+			txBuf[0] = rxBuf[0] ^ ~0;
 		}
 
-		/* if rx buffer is full */
+		/* if rx buffer is full, data from spi bus is ready */
 		if (DCH0INTbits.CHBCIF) {
 			DCH0INTCLR = 1<<3;		/* clear flag */
 			spi_data_ready = 1;
 		}
 
-		/* shutdown stepgen if no activity */
-		if (spi_timeout)
-			spi_timeout--;
-		else
-			reset_board();
+		/* reset the board if there is no SPI activity */
+		if (SPI2STATbits.SPIBUSY) {
+			spi_timeout = SPI_TIMEOUT;
+		} else {
+			if (spi_timeout)
+				spi_timeout--;
+
+			if (spi_timeout == 1) {				
+				DCH0ECONSET=BIT_6;	/* abort DMA transfers */
+				DCH1ECONSET=BIT_6;
+			
+				init_spi();
+				init_dma();
+				reset_board();
+
+				/* wait until tx buffer is filled up */
+				while (!SPI2STATbits.SPITBF);
+			}
+		}
 
 		/* blink onboard led */
-		if (!(counter++ % (spi_timeout ? 0x10000 : 0x20000))) {
+		if (!(counter++ % (spi_timeout ? 0x10000 : 0x40000))) {
 			LED_TOGGLE;
 		}
 
-		/* keep alive only if spi is active */
-		if (spi_data_ready)
-			WDTCONSET = 0x01;
+		/* keep alive */
+		WDTCONSET = 0x01;
 	}
 	return 0;
 }

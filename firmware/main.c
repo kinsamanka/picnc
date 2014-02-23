@@ -183,6 +183,7 @@ int main(void)
 {
 	int i, j, spi_timeout, cycles;
 	unsigned long counter;
+	uint32_t last_cmd;
 
 	/* Disable JTAG port so we get our I/O pins back */
 	DDPCONbits.JTAGEN = 0;
@@ -213,6 +214,7 @@ int main(void)
 	reset_board();
 	spi_data_ready = 0;
 	spi_timeout = 0;
+	last_cmd = 0;
 	counter = 0;
 	cycles = 0;
 	j = 0;
@@ -224,8 +226,10 @@ int main(void)
 	while (1) {
 		/* counting starts after >CM1 command
 		   data is sent when >CM2 command is received */
-		if (cycles++ == UPDATE_CYCLE)
-			stepgen_get_position((void *)&txBuf[1]);
+		if (last_cmd == 0x314D433E) {
+			if (cycles++ == UPDATE_CYCLE)
+				stepgen_get_position((void *)&txBuf[1]);
+		}
 
 		if (spi_data_ready) {
 			spi_data_ready = 0;
@@ -256,6 +260,7 @@ int main(void)
 					txBuf[i] = rxBuf[i] ^ ~0;
 				break;
 			}
+			last_cmd = rxBuf[0];
 		}
 
 		/* if rx buffer is half-full, update the integrity check.

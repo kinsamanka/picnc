@@ -39,7 +39,7 @@
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define SPIBUFSIZE			20
 #define BUFSIZE				(SPIBUFSIZE/4)
-#define UPDATE_CYCLE			300
+#define UPDATE_CYCLE			200
 #define SPI_TIMEOUT			1000L
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];

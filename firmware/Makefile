@@ -25,7 +25,7 @@ AVRDUDECONF = -C ../mpide-0023-linux-20120903/hardware/tools/avrdude.conf -c stk
 		-p pic32 -P /dev/ttyUSB0 -q -q
 
 PIC32PROG = /usr/local/bin/pic32prog
-PIC32PROGCONF = -p
+PIC32PROGCONF = 
 
 CC		= $(GCCPREFIX)gcc -EL -g -mips32r2 -mprocessor=$(DEVICE) -O3
 CC		+= -Wextra -Wall -fno-exceptions -ffunction-sections

@@ -1,4 +1,4 @@
-/*    Copyright (C) 2013 GP Orcullo
+/*    Copyright (C) 2014 GP Orcullo
  *
  *    This program is free software; you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -18,10 +18,8 @@
 #ifndef PICNC_GRBL_H
 #define PICNC_GRBL_H
 
-#define SPICLKDIV		32		/* ~8 Mhz */
+#define SPICLKRATE		0x1004		/* 10.2 Mhz */
 #define NUMAXES			3		/* X Y Z */
-
-#define REQ_TIMEOUT		10000ul
 
 #define SPIBUFSIZE		20		/* SPI buffer size */
 #define BUFSIZE			(SPIBUFSIZE/4)
@@ -39,53 +37,58 @@
 #define get_position(a)		(rxBuf[1 + (a)])
 #define update_velocity(a, b)	(txBuf[1 + (a)] = (b))
 
-/* Broadcom defines */
+/* Sunxi defines */
 
-#define BCM2835_PERI_BASE	0x20000000
-#define BCM2835_GPIO_BASE	(BCM2835_PERI_BASE + 0x200000) /* GPIO controller */
-#define BCM2835_SPI_BASE	(BCM2835_PERI_BASE + 0x204000) /* SPI controller */
+#define SUNXI_PIO_BASE		(0x01C20000)
+#define SUNXI_SPI2_BASE		(0x01C17000)
 
-#define BCM2835_GPFSEL0		*(gpio)
-#define BCM2835_GPFSEL1		*(gpio + 1)
-#define BCM2835_GPFSEL2		*(gpio + 2)
-#define BCM2835_GPFSEL3		*(gpio + 3)
-#define BCM2835_GPFSEL4		*(gpio + 4)
-#define BCM2835_GPFSEL5		*(gpio + 5)
-#define BCM2835_GPSET0		*(gpio + 7)
-#define BCM2835_GPSET1		*(gpio + 8)
-#define BCM2835_GPCLR0		*(gpio + 10)
-#define BCM2835_GPCLR1		*(gpio + 11)
-#define BCM2835_GPLEV0		*(gpio + 13)
-#define BCM2835_GPLEV1		*(gpio + 14)
+#define OFS			(gpio + 0x224)	/* port PE offset */
 
-#define BCM2835_SPICS 		*(spi + 0)
-#define BCM2835_SPIFIFO     	*(spi + 1)
-#define BCM2835_SPICLK 		*(spi + 2)
+#define SUNXI_PE_CFG0		*(OFS)		/* configure register 0 */
+#define SUNXI_PE_CFG1		*(OFS + 0x01)	/* configure register 1 */ 
+#define SUNXI_PE_CFG2		*(OFS + 0x02)	/* configure register 2 */ 
+#define SUNXI_PE_CFG3		*(OFS + 0x03)	/* configure register 3 */ 
+#define SUNXI_PE_DAT		*(OFS + 0x04)	/* data register */ 
+#define SUNXI_PE_PUL0		*(OFS + 0x07)	/* pull register 0 */ 
+#define SUNXI_PE_PUL1		*(OFS + 0x08)	/* pull register 1 */
 
-#define SPI_CS_LEN_LONG		0x02000000
-#define SPI_CS_DMA_LEN		0x01000000
-#define SPI_CS_CSPOL2		0x00800000
-#define SPI_CS_CSPOL1		0x00400000
-#define SPI_CS_CSPOL0		0x00200000
-#define SPI_CS_RXF		0x00100000
-#define SPI_CS_RXR		0x00080000
-#define SPI_CS_TXD		0x00040000
-#define SPI_CS_RXD		0x00020000
-#define SPI_CS_DONE		0x00010000
-#define SPI_CS_LEN		0x00002000
-#define SPI_CS_REN		0x00001000
-#define SPI_CS_ADCS		0x00000800
-#define SPI_CS_INTR		0x00000400
-#define SPI_CS_INTD		0x00000200
-#define SPI_CS_DMAEN		0x00000100
-#define SPI_CS_TA		0x00000080
-#define SPI_CS_CSPOL		0x00000040
-#define SPI_CS_CLEAR_RX		0x00000020
-#define SPI_CS_CLEAR_TX		0x00000010
-#define SPI_CS_CPOL		0x00000008
-#define SPI_CS_CPHA		0x00000004
-#define SPI_CS_CS_10		0x00000002
-#define SPI_CS_CS_01		0x00000001
+#define SUNXI_CCM_SPI2_CLK_CFG	*(gpio + 0x2A)	/* CCM register */
+#define SUNXI_CCMU_AHB_GATE0	*(gpio + 0x18)
+
+#define SPI2_RXDATA		*((unsigned char *)spi) /* rx data register */
+#define SPI2_TXDATA		*((unsigned char *)(spi + 0x01)) /* tx data register */
+#define SPI2_CTL		*(spi + 0x02)	/* control register */
+#define SPI2_INT_CTL		*(spi + 0x03)	/* interrupt control register */
+#define SPI2_STATUS		*(spi + 0x04)	/* status register */
+#define SPI2_DMA_CTL		*(spi + 0x05)	/* dma control register */
+#define SPI2_WAIT		*(spi + 0x06)	/* wait clock counter register */
+#define SPI2_CLK_RATE		*(spi + 0x07)	/* clock rate control register */
+#define SPI2_BC			*(spi + 0x08)	/* burst counter register   */
+#define SPI2_TC			*(spi + 0x09)	/* transmit counter register */
+#define SPI2_FIFO_STA		*(spi + 0x0A)	/* fifo status register */
+
+/* lifted from arch/arm/mach-sun5i/include/mach/spi.h */
+#define SPI_CTL_EN		(0x1 << 0)	/* SPI module enable control */
+#define SPI_CTL_FUNC_MODE	(0x1 << 1)	/* SPI function mode select */
+#define SPI_CTL_PHA		(0x1 << 2)	/* SPI Clock polarity control */
+#define SPI_CTL_POL		(0x1 << 3)	/* SPI Clock/Data phase control */
+#define SPI_POL_PHA_BIT_POS	(2)
+#define SPI_CTL_SSPOL		(0x1 << 4)	/* SPI Chip select signal polarity control */
+#define SPI_CTL_DMAMOD		(0x1 << 5)	/* SPI dma mode select */
+#define SPI_CTL_LMTF		(0x1 << 6)	/* LSB/MSB transfer first select */
+#define SPI_CTL_SSCTL		(0x1 << 7)	/* SPI chip select control */
+#define SPI_CTL_RST_TXFIFO	(0x1 << 8)	/* SPI reset rxFIFO */
+#define SPI_CTL_RST_RXFIFO	(0x1 << 9)	/* SPI reset txFIFO */
+#define SPI_CTL_XCH		(0x1 << 10)	/* Exchange burst */
+#define SPI_CTL_RAPIDS		(0x1 << 11)	/* Rapids transfer mode */
+#define SPI_CTL_SS_MASK		(0x3 << 12)	/* SPI chip select */
+#define SPI_SS_BIT_POS		(12)
+#define SPI_CTL_DDB		(0x1 << 14)	/* Dummy burst Type */
+#define SPI_CTL_DHB		(0x1 << 15)	/* Discard Hash Burst */
+#define SPI_CTL_SS_CTRL		(0x1 << 16)	/* SS output mode select */
+#define SPI_CTL_SS_LEVEL	(0x1 << 17)
+#define SPI_CTL_T_PAUSE_EN	(0x1 << 18)	/* Transmit Pause Enable */
+#define SPI_CTL_MASTER_SDC	(0x1 << 19)	/* master sample data control */
 
 #define PAGE_SIZE		(4*1024)
 #define BLOCK_SIZE		(4*1024)

@@ -1,4 +1,4 @@
-/*    Copyright (C) 2013 GP Orcullo
+/*    Copyright (C) 2014 GP Orcullo
  *
  *    Portions of this code is based on stepgen.c
  *    by John Kasunich, Copyright (C) 2003-2007
@@ -31,10 +31,6 @@
 
 #if !defined(BUILD_SYS_USER_DSO)
 #error "This driver is for usermode threads only"
-#endif
-
-#if !defined(TARGET_PLATFORM_RASPBERRY)
-#error "This driver is for the Raspberry Pi platform only"
 #endif
 
 #define MODNAME "picnc_grbl"
@@ -508,12 +504,12 @@ void read_buf()
 	int i;
 
 	/* wait until transfer is finished */
-	while (!(BCM2835_SPICS & SPI_CS_DONE));
+	while ((SPI2_CTL & SPI_CTL_XCH));
 
 	/* read buffer */
 	buf = (char *)rxBuf;
 	for (i=0; i<SPIBUFSIZE; i++) {
-		*buf++ = BCM2835_SPIFIFO;
+		*buf++ = SPI2_RXDATA;
 	}
 }
 
@@ -525,8 +521,15 @@ void write_buf()
 	/* send txBuf */
 	buf = (char *)txBuf;
 	for (i=0; i<SPIBUFSIZE; i++) {
-		BCM2835_SPIFIFO = *buf++;
+		SPI2_TXDATA = *buf++;
 	}
+
+	/* update transmit len */
+	SPI2_BC = SPIBUFSIZE;
+	SPI2_TC = SPIBUFSIZE;
+
+	/* start transmit */
+	SPI2_CTL |= SPI_CTL_XCH;
 }
 
 int map_gpio()
@@ -546,7 +549,7 @@ int map_gpio()
 	        PROT_READ|PROT_WRITE,
 	        MAP_SHARED,
 	        fd,
-	        BCM2835_GPIO_BASE);
+	        SUNXI_PIO_BASE);
 
 	if (gpio == MAP_FAILED) {
 		rtapi_print_msg(RTAPI_MSG_ERR,"%s: can't map gpio\n",modname);
@@ -561,7 +564,7 @@ int map_gpio()
 	        PROT_READ|PROT_WRITE,
 	        MAP_SHARED,
 	        fd,
-	        BCM2835_SPI_BASE);
+	        SUNXI_SPI2_BASE);
 
 	close(fd);
 
@@ -587,40 +590,44 @@ void setup_gpio()
 {
 	u32 x;
 
-	/* change SPI pins */
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (9*3));
-	x |= (0b100 << (9*3));
-	BCM2835_GPFSEL0 = x;
+	/* set pins to SPI, PE0 - PE3 */
+	x = SUNXI_PE_CFG0;
+	x &= ~(0xffff);
+	x |= 0x4444;
+	SUNXI_PE_CFG0 = x;
 
-	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (0*3) | 0b111 << (1*3));
-	x |= (0b100 << (0*3) | 0b100 << (1*3));
-	BCM2835_GPFSEL1 = x;
+	/* setup CCM clock and enable gating */
+	SUNXI_CCM_SPI2_CLK_CFG = 0x82000003;	/* AHB_CLK = 102MHz */
+	SUNXI_CCMU_AHB_GATE0 |= (1<<22);
 
-	/* set up SPI */
-	BCM2835_SPICLK = SPICLKDIV;
+	/* reset SPI module */
+	SPI2_CTL = 0;
+	SPI2_INT_CTL = 0;
+	SPI2_STATUS = ~0;
+	SPI2_DMA_CTL = 0;
+	SPI2_WAIT = 0;
+	SPI2_BC = 0;
+	SPI2_TC = 0;
 
-	BCM2835_SPICS = 0;
+	/* clear fifos */
+	SPI2_CTL |= (SPI_CTL_RST_TXFIFO | SPI_CTL_RST_RXFIFO);
 
-	/* clear FIFOs */
-	BCM2835_SPICS |= SPI_CS_CLEAR_RX | SPI_CS_CLEAR_TX;
-
-	/* activate transfer */
-	BCM2835_SPICS = SPI_CS_TA;
+	/* set SPI clk */
+	SPI2_CLK_RATE = SPICLKRATE;
+	
+	/* pause when RX full, SSCTL, SSPOL, 0=POL, 0=PHA, MASTER 
+	   enable SPI */
+	SPI2_CTL = SPI_CTL_T_PAUSE_EN | SPI_CTL_SSCTL | SPI_CTL_SSPOL | 
+		SPI_CTL_FUNC_MODE | SPI_CTL_EN;
 }
 
 void restore_gpio()
 {
 	u32 x;
 
-	/* change SPI pins to inputs*/
-	x = BCM2835_GPFSEL0;
-	x &= ~(0b111 << (8*3) | 0b111 << (9*3));
-	BCM2835_GPFSEL0 = x;
-
-	x = BCM2835_GPFSEL1;
-	x &= ~(0b111 << (0*3) | 0b111 << (1*3));
-	BCM2835_GPFSEL1 = x;
+	/* set PE0 - PE3 pins to inputs */
+	x = SUNXI_PE_CFG0;
+	x &= ~(0xffff);
+	SUNXI_PE_CFG0 = x;
 }
 

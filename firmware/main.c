@@ -39,7 +39,7 @@
 #define CORE_TICK_RATE	        	(SYS_FREQ/2/BASEFREQ)
 #define SPIBUFSIZE			20
 #define BUFSIZE				(SPIBUFSIZE/4)
-#define UPDATE_CYCLE			300
+#define UPDATE_CYCLE			200
 #define SPI_TIMEOUT			1000L
 
 static volatile uint32_t rxBuf[BUFSIZE], txBuf[BUFSIZE];
@@ -274,26 +274,23 @@ int main(void)
 		if (DCH0INTbits.CHBCIF) {
 			DCH0INTCLR = 1<<3;		/* clear flag */
 			spi_data_ready = 1;
+			spi_timeout = SPI_TIMEOUT;
 		}
 
 		/* reset the board if there is no SPI activity */
-		if (SPI2STATbits.SPIBUSY) {
-			spi_timeout = SPI_TIMEOUT;
-		} else {
-			if (spi_timeout)
-				spi_timeout--;
+		if (spi_timeout)
+			spi_timeout--;
 
-			if (spi_timeout == 1) {				
-				DCH0ECONSET=BIT_6;	/* abort DMA transfers */
-				DCH1ECONSET=BIT_6;
-			
-				init_spi();
-				init_dma();
-				reset_board();
+		if (spi_timeout == 1) {				
+			DCH0ECONSET=BIT_6;	/* abort DMA transfers */
+			DCH1ECONSET=BIT_6;
+		
+			init_spi();
+			init_dma();
+			reset_board();
 
-				/* wait until tx buffer is filled up */
-				while (!SPI2STATbits.SPITBF);
-			}
+			/* wait until tx buffer is filled up */
+			while (!SPI2STATbits.SPITBF);
 		}
 
 		/* blink onboard led */

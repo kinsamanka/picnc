@@ -54,7 +54,7 @@ variable double recip_dt	  = 0;	 /* reciprocal of period, avoids divides */
 variable double scale_inv[4]	  = 1.0; /* inverse of scale */
 variable double old_vel[4]	  = 0;
 variable double old_pos[4]	  = 0;
-variable int64_t accum[4]	  = 0;	 /* 64 bit DDS accumulator */
+variable s64 accum[4]	  = 0;	 /* 64 bit DDS accumulator */
 variable s32 accum_diff		  = 0;
 variable s32 old_count[4]	  = 0;
 variable double old_scale[4]	  = 0;
@@ -81,7 +81,7 @@ author "GP Orcullo";
 #error "This driver is for usermode threads only"
 #endif
 
-#if !defined(TARGET_PLATFORM_RASPBERRY)
+#if defined(TARGET_PLATFORM_RASPBERRY)
 #error "This driver is for the Raspberry Pi platform only"
 #endif
 
@@ -164,7 +164,7 @@ FUNCTION(read_spi)
 	BCM2835_GPSET0 = (1l << 14);
 
 	/* sanity check */
-	if (((uint32_t)rxBuf[1] >> 8) == (rxBuf[BUFSIZE] & 0xffffff))
+	if (((u32)rxBuf[1] >> 8) == (rxBuf[BUFSIZE] & 0xffffff))
 		ready = true;
 	else
 		ready = false;
@@ -403,7 +403,7 @@ void transfer_data()
 
 void reset_board()
 {
-	uint32_t x,i;
+	u32 x,i;
 
 	/* GPIO 18 is configured as a tri-state output pin */
 
@@ -472,7 +472,7 @@ int map_gpio()
 
 void setup_gpio()
 {
-	uint32_t x;
+	u32 x;
 
 	/* disable UART pins and use as gpio */
 	
@@ -529,7 +529,7 @@ void setup_gpio()
 
 void restore_gpio()
 {
-	uint32_t x;
+	u32 x;
 
 	/* restore UART */
 	x = BCM2835_GPFSEL1;

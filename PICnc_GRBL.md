@@ -1,0 +1,17 @@
+#GRBL pinout compatible PICnc
+
+![http://imageshack.us/scaled/large/20/qxeh.jpg](http://imageshack.us/scaled/large/20/qxeh.jpg)
+![http://imageshack.us/scaled/large/577/dm9e.jpg](http://imageshack.us/scaled/large/577/dm9e.jpg)
+![http://imageshack.us/scaled/large/802/skme.jpg](http://imageshack.us/scaled/large/802/skme.jpg)
+![http://imageshack.us/scaled/large/197/i3pb.jpg](http://imageshack.us/scaled/large/197/i3pb.jpg)
+![http://imageshack.us/scaled/large/209/sme5.jpg](http://imageshack.us/scaled/large/209/sme5.jpg)
+![http://imageshack.us/scaled/large/703/g87z.jpg](http://imageshack.us/scaled/large/703/g87z.jpg)
+![http://imageshack.us/scaled/large/35/pi6w.jpg](http://imageshack.us/scaled/large/35/pi6w.jpg)
+![http://imageshack.us/scaled/large/46/evxo.jpg](http://imageshack.us/scaled/large/46/evxo.jpg)
+![http://imageshack.us/scaled/large/40/e4o4.jpg](http://imageshack.us/scaled/large/40/e4o4.jpg)
+![http://imageshack.us/scaled/large/9/fqy1.jpg](http://imageshack.us/scaled/large/9/fqy1.jpg)
+![http://imageshack.us/scaled/large/69/cwqd.jpg](http://imageshack.us/scaled/large/69/cwqd.jpg)
+![http://imageshack.us/scaled/large/5/1z6p.jpg](http://imageshack.us/scaled/large/5/1z6p.jpg)
+![http://imageshack.us/scaled/large/440/ghmv.jpg](http://imageshack.us/scaled/large/440/ghmv.jpg)
+![http://imageshack.us/scaled/large/844/kjee.jpg](http://imageshack.us/scaled/large/844/kjee.jpg)
+![http://imageshack.us/scaled/large/440/c2w2.jpg](http://imageshack.us/scaled/large/440/c2w2.jpg)

@@ -7,20 +7,20 @@ OpenOCD together with RPi GPIO is used to program the PIC32 chip for those who d
 
 The following steps were performed within RPi using Raspbian image.
 ### Installing OpenOCD ###
-> Install required software
+Install required software
 ```
 sudo apt-get install libjim-dev libtool automake texinfo
 ```
-> Make **_/usr/src_** directory writable to users
+Make **/usr/src** directory writable to users
 ```
 sudo chmod a+rw /usr/src
 ```
-> Download OpenOCD
+Download OpenOCD
 ```
 cd /usr/src
 git clone git://git.code.sf.net/p/openocd/code openocd-code
 ```
-> Compile and install
+Compile and install
 ```
 cd openocd-code
 git checkout fe97fab -b rpi
@@ -29,7 +29,7 @@ git checkout fe97fab -b rpi
 make
 sudo make install
 ```
-> Create configuration files
+Create configuration files
 ```
 sudo sh -c 'cat>/usr/local/share/openocd/scripts/interface/rpi.cfg<<EOF
 #
@@ -64,7 +64,7 @@ EOF'
 ### JTAG Connections ###
 It is preferable that the PIC32 is programmed outside of the circuit using the recommended minimal circuit:
 
-> ![http://imageshack.us/scaled/landing/23/minimalpic32.png](http://imageshack.us/scaled/landing/23/minimalpic32.png)
+![http://imageshack.us/scaled/landing/23/minimalpic32.png](http://imageshack.us/scaled/landing/23/minimalpic32.png)
 
 
 Connect the RPi P1 header pins to the target PIC32 using the following table:
@@ -84,9 +84,9 @@ Connect the RPi P1 header pins to the target PIC32 using the following table:
 RPi GPIO Pinout
 
 
-> ![http://elinux.org/images/6/61/RPi_P1_header.png](http://elinux.org/images/6/61/RPi_P1_header.png)
+![http://elinux.org/images/6/61/RPi_P1_header.png](http://elinux.org/images/6/61/RPi_P1_header.png)
 
-> ![http://elinux.org/images/2/2a/GPIOs.png](http://elinux.org/images/2/2a/GPIOs.png)
+![http://elinux.org/images/2/2a/GPIOs.png](http://elinux.org/images/2/2a/GPIOs.png)
 
 
 ### Programming ###

@@ -4,51 +4,51 @@ This build is based on the assumption that the host is running on a Debian based
 # Create minimal Raspbian image #
 The Raspbian image is created using debootstrap and QEMU. These steps can also be performed on a Raspberry Pi.
 ## Install required packages ##
-> ### On host PC ###
+### On host PC ###
 ```
 sudo apt-get install qemu qemu-user qemu-user-static binfmt-support debootstrap
 ```
-> ### Or on RPi ###
+### Or on RPi ###
 ```
 sudo apt-get install debootstrap
 ```
 ## Build image using debootstrap ##
 Select an appropriate Raspbian mirror at http://www.raspbian.org/RaspbianMirrors
-> ### On host PC ###
+### On host PC ###
 ```
 cd <working dir>
 sudo debootstrap --foreign --no-check-gpg --include=ca-certificates --arch=armhf wheezy rootfs <Raspbian mirror>
 ```
-> > Edit _/etc/qemu-binfmt.conf_, add the following line:
+Edit _/etc/qemu-binfmt.conf_, add the following line:
 ```
 EXTRA_OPTS="-L/usr/lib/arm-linux-gnueabihf"
 ```
 
-> Copy qemu executable and then chroot
+Copy qemu executable and then chroot
 ```
 sudo cp $(which qemu-arm-static) rootfs/usr/bin
 sudo chroot rootfs/ /debootstrap/debootstrap --second-stage --verbose
 ```
-> > add the raspbian mirror used to /etc/apt/sources.list
+add the raspbian mirror used to /etc/apt/sources.list
 ```
 sudo sh -c 'echo deb <Raspbian mirror> wheezy main > rootfs/etc/apt/sources.list'
 ```
 
-> ### Or on RPI ###
+### Or on RPI ###
 ```
 cd <working dir>
 sudo debootstrap --no-check-gpg --include=ca-certificates wheezy rootfs <Raspbian mirror>
 ```
 ## Configure Raspbian ##
-> Edit _/etc/hostname_
+Edit _/etc/hostname_
 ```
 sudo sh -c 'echo rpi-linuxcnc >rootfs/etc/hostname'
 ```
-> Edit _/etc/hosts_
+Edit _/etc/hosts_
 ```
 sudo sh -c 'echo 127.0.0.1\\trpi-linuxcnc >> rootfs/etc/hosts'
 ```
-> Edit network interface
+Edit network interface
 ```
 sudo sh -c 'cat> rootfs/etc/network/interfaces << EOF
 auto lo
@@ -59,7 +59,7 @@ iface eth0 inet dhcp
 EOF
 '
 ```
-> Edit _/etc/fstab_
+Edit _/etc/fstab_
 ```
 sudo sh -c 'cat> rootfs/etc/fstab << EOF
 proc /proc proc defaults 0 0
@@ -67,11 +67,11 @@ proc /proc proc defaults 0 0
 EOF
 '
 ```
-> Create _/etc/resolv.conf_
+Create _/etc/resolv.conf_
 ```
 sudo cp /etc/resolv.conf rootfs/etc
 ```
-> Set locale to ignore warnings
+Set locale to ignore warnings
 ```
 sudo sh -c 'cat >> rootfs/root/.bashrc << EOF
 LC_ALL=C
@@ -80,41 +80,41 @@ LANG=C
 EOF
 '
 ```
-> Chroot
+Chroot
 ```
 sudo chroot rootfs /bin/bash
 ```
-> Update
+Update
 ```
 apt-get update
 ```
-> ### Install Xenomai Kernel ###
-> > Download xenomai kernel
+### Install Xenomai Kernel ###
+Download xenomai kernel
 ```
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/linux-image-3.8.13-xenomai%2B_1.0.gpo_armhf.deb
 ```
-> > Install kernel
+Install kernel
 ```
 dpkg -i linux-image-3.8.13-xenomai+_1.0.gpo_armhf.deb
 mv /boot/vmlinuz-3.8.13-xenomai+ /boot/kernel.img
 ```
 
-> ### Install Xenomai Userspace ###
-> > Download Xenomai
+### Install Xenomai Userspace ###
+Download Xenomai
 ```
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/xenomai-runtime_2.6.3_armhf.deb
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/libxenomai-dev_2.6.3_armhf.deb
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/libxenomai1_2.6.3_armhf.deb
 ```
-> > Install Xenomai
+Install Xenomai
 ```
 dpkg -i libxenomai1_2.6.3_armhf.deb
 dpkg -i libxenomai-dev_2.6.3_armhf.deb
 dpkg -i xenomai-runtime_2.6.3_armhf.deb
 ```
 
-> ### Install Linuxcnc ###
-> > Install Linuxcnc dependencies
+### Install Linuxcnc ###
+Install Linuxcnc dependencies
 ```
 apt-get install --no-install-recommends g++ python yapps2-runtime \
 	libatk1.0-0 libboost-python1.49.0 libcairo2 libfontconfig1 \
@@ -126,53 +126,53 @@ apt-get install --no-install-recommends g++ python yapps2-runtime \
 	python-vte python-xlib python-gtkglext1 python-configobj \
 	tclreadline bc 
 ```
-> > Download Linuxcnc
+Download Linuxcnc
 ```
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/linuxcnc-dev_2.5.3_armhf.deb
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/linuxcnc-posix_2.5.3_armhf.deb
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/linuxcnc-xenomai_2.5.3_armhf.deb
 wget https://dl.dropboxusercontent.com/u/17024524/linuxcnc/Raspbian/linuxcnc_2.5.3_armhf.deb
 ```
-> > Install Linuxcnc
+Install Linuxcnc
 ```
 dpkg -i linuxcnc*deb
 ```
 
-> ### Install Additional Programs ###
-> > Extra packages
+### Install Additional Programs ###
+Extra packages
 ```
 apt-get install --no-install-recommends locales sudo openssh-server ntp usbmount \
 	make git patch less rsync
 ```
-> > Minimal X
+Minimal X
 ```
 apt-get install --no-install-recommends xinit xserver-xorg-core xserver-xorg \
 	xserver-xorg-input-all xserver-xorg-input-evdev xserver-xorg-video-fbdev
 ```
-> > Minimal window manager
+Minimal window manager
 ```
 apt-get install --no-install-recommends lxde lxde-icon-theme iceweasel
 ```
-> > Enable remote desktop access
+Enable remote desktop access
 ```
 apt-get install xrdp
 ```
 
-> Cleanup
+Cleanup
 ```
 rm *deb
 apt-get clean
 ```
-> Create new user
+Create new user
 ```
 adduser pi
 usermod -a -G xenomai,sudo,staff,kmem,plugdev pi
 ```
-> Configure usbmount
+Configure usbmount
 ```
 sed -i -e 's/""/"-fstype=vfat,flush,gid=plugdev,dmask=0007,fmask=0117"/g' /etc/usbmount/usbmount.conf
 ```
-> Configure udev rules
+Configure udev rules
 ```
 cat >/etc/udev/rules.d/xenomai.rules<<EOF
 # allow RW access to /dev/mem
@@ -183,22 +183,22 @@ KERNEL=="rtheap", MODE="0660", GROUP="xenomai"
 KERNEL=="rtp[0-9]*", MODE="0660", GROUP="xenomai"
 EOF
 ```
-> Exit chroot
+Exit chroot
 ```
 exit
 ```
-> Cleanup QEMU
+Cleanup QEMU
 ```
 sudo rm rootfs/usr/bin/qemu-arm-static
 ```
 # Create SD card image #
 This section creates a 2GB SD image file
-> Create sparse file
+Create sparse file
 ```
 cd <working dir>
 dd if=/dev/zero of=rpi-lcnc.img count=0 bs=1 seek=2021654528
 ```
-> Create partitions
+Create partitions
 ```
 sudo sh -c 'cat <<EOF | sfdisk --force rpi-lcnc.img
 unit: sectors
@@ -208,7 +208,7 @@ unit: sectors
 EOF
 '
 ```
-> Format partitions
+Format partitions
 ```
 sudo losetup /dev/loop0 rpi-lcnc.img -o $((2048*512))
 sudo mkfs.vfat -F 32 -n BOOT /dev/loop0
@@ -217,23 +217,23 @@ sudo losetup /dev/loop0 rpi-lcnc.img -o $((206848*512))
 sudo mkfs.ext4 -L ROOT /dev/loop0
 sudo losetup -d /dev/loop0
 ```
-> Mount partitions
+Mount partitions
 ```
 mkdir -p mnt/{boot,root}
 sudo mount -o loop,offset=$((2048*512)) rpi-lcnc.img mnt/boot
 sudo mount -o loop,offset=$((206848*512)) rpi-lcnc.img mnt/root
 ```
-> Download and unzip firmware
+Download and unzip firmware
 ```
 wget https://github.com/raspberrypi/firmware/archive/master.zip
 unzip master.zip
 ```
-> Populate ROOT
+Populate ROOT
 ```
 sudo rsync -a rootfs/ mnt/root/
 sudo cp -a firmware-master/hardfp/opt/vc mnt/root/opt/
 ```
-> Populate BOOT
+Populate BOOT
 ```
 sudo cp rootfs/boot/* mnt/boot/
 sudo cp firmware-master/boot/{*bin,*dat,*elf} mnt/boot/
@@ -251,57 +251,57 @@ dwc_otg.lpm_enable=0 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait
 EOF
 '	
 ```
-> Unmount partitions
+Unmount partitions
 ```
 sudo umount mnt/{boot,root}
 ```
-> Compress image
+Compress image
 ```
 bzip2 -9 rpi-lcnc.img
 ```
-> Install image
+Install image
 ```
 sudo sh -c 'bzcat rpi-lcnc.img.bz2 > /dev/<sdcard>'
 ```
 # Pre-built Image #
-> [rpi-lcnc.2.1.img.bz2](https://docs.google.com/file/d/0B4Qqa1lYhaVBRnNCMlVfdkQ2Y00)
+[rpi-lcnc.2.1.img.bz2](https://docs.google.com/file/d/0B4Qqa1lYhaVBRnNCMlVfdkQ2Y00)
 ```
 md5sum:		cb92f875a313c75c5d47a219defe33c7
 username:	pi
 password:	raspberry
 ```
 # Post-install #
-> Configure locale
+Configure locale
 ```
 sudo dpkg-reconfigure locales
 ```
-> Configure timezone
+Configure timezone
 ```
 sudo dpkg-reconfigure tzdata
 ```
-> Generate new ssh keys
+Generate new ssh keys
 ```
 sudo rm /etc/ssh/ssh_host_*
 sudo dpkg-reconfigure openssh-server
 ```
 # Testing #
-> SSH to RPi
+SSH to RPi
 ```
 ssh -X -l rpi <ip address>
 ```
-> Xenomai regression test
+Xenomai regression test
 ```
 for a in irqbench rtdmtest switchtest timerbench rtipc posix klat ; \
 do sudo modprobe xeno_$a; \
 done
 sudo xeno-regression-test -l "/usr/lib/xenomai/dohell -m /tmp 100" -t 2
 ```
-> Xenomai latency test
+Xenomai latency test
 ```
 sudo sh -c 'echo 3500 > /proc/xenomai/latency'
 /usr/xenomai/bin/latency
 ```
-> LinuxCNC latency test
+LinuxCNC latency test
 ```
 latency-test 100us 1ms
 ```
